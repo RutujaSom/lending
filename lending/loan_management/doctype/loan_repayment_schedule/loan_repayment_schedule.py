@@ -318,10 +318,7 @@ class LoanRepaymentSchedule(Document):
 		) = self.add_rows_from_prev_disbursement("repayment_schedule", 100, 100)
 
 		if flt(balance_amount, self.precision) > 0:
-<<<<<<< Updated upstream
-=======
 			# print('make_repayment_schedule .....')
->>>>>>> Stashed changes
 			self.make_repayment_schedule(
 				"repayment_schedule",
 				previous_interest_amount,
@@ -390,10 +387,7 @@ class LoanRepaymentSchedule(Document):
 		moratorium_interest = 0
 		row = 0
 		if not self.restructure_type and self.repayment_method != "Repay Fixed Amount per Period":
-<<<<<<< Updated upstream
-=======
 			# print('self.repayment_days ....',self.repayment_days)
->>>>>>> Stashed changes
 			monthly_repayment_amount = get_monthly_repayment_amount(
 				balance_amount, rate_of_interest, self.repayment_periods, self.repayment_frequency
 			)

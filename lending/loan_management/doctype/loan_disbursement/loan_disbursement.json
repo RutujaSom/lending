@@ -144,11 +144,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Applicant Type",
-<<<<<<< Updated upstream
-   "options": "Employee\nMember\nCustomer",
-=======
    "options": "Loan Member",
->>>>>>> Stashed changes
    "read_only": 1,
    "reqd": 1
   },
@@ -386,11 +382,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
-<<<<<<< Updated upstream
- "modified": "2025-06-23 16:14:49.609564",
-=======
  "modified": "2025-08-25 12:30:26.884933",
->>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Disbursement",

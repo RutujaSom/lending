@@ -610,11 +610,7 @@
    "type": "Link"
   }
  ],
-<<<<<<< Updated upstream
- "modified": "2025-05-07 15:23:01.851142",
-=======
  "modified": "2025-08-28 15:51:22.903688",
->>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Lending",
@@ -625,11 +621,7 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
-<<<<<<< Updated upstream
- "sequence_id": 0.0,
-=======
  "sequence_id": 1.0,
->>>>>>> Stashed changes
  "shortcuts": [
   {
    "color": "Grey",
@@ -658,11 +650,6 @@
    "type": "Dashboard"
   }
  ],
-<<<<<<< Updated upstream
  "title": "Lending",
  "type": "Workspace"
 }
-=======
- "title": "Lending"
-}
->>>>>>> Stashed changes

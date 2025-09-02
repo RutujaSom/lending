@@ -49,11 +49,7 @@ class Loan(AccountsController):
 		amended_from: DF.Link | None
 		applicant: DF.Link
 		applicant_name: DF.Data | None
-<<<<<<< Updated upstream
-		applicant_type: DF.Literal["Employee", "Member", "Customer"]
-=======
 		applicant_type: DF.Literal["Loan Member"]
->>>>>>> Stashed changes
 		available_limit_amount: DF.Currency
 		cancellation_date: DF.Date | None
 		classification_code: DF.Link | None

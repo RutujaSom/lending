@@ -188,10 +188,6 @@ class LoanRepayment(AccountsController):
 			process_loan_interest_accrual_for_loans,
 		)
 
-<<<<<<< Updated upstream
-		if self.flags.from_bulk_payment:
-			return
-=======
 		# Ensure amount field exists in Loan Repayment
 		if self.amount_paid:
 			
@@ -207,7 +203,6 @@ class LoanRepayment(AccountsController):
 			})
 			collection.insert(ignore_permissions=True)
 
->>>>>>> Stashed changes
 		if self.is_backdated:
 			if frappe.flags.in_test:
 				self.create_repost()
@@ -3174,7 +3169,6 @@ def loan_wise_submit(loan, rows):
 		process_loan_interest_accrual_for_loans,
 	)
 
-<<<<<<< Updated upstream
 	rows = list(rows)
 	from_date = getdate(rows[0]["value_date"])
 	to_date = getdate(rows[-1]["value_date"])
@@ -3192,66 +3186,7 @@ def loan_wise_submit(loan, rows):
 	process_daily_loan_demands(posting_date=to_date, loan=loan)
 	process_loan_interest_accrual_for_loans(posting_date=to_date, loan=loan)
 	repost.submit()
-=======
-	# sort data by posting date
-	data = sorted(data, key=lambda x: x["posting_date"])
-
-	grouped_data = group_by_loan_and_disbursement(data)
-	for key, rows in grouped_data.items():
-		from_date = getdate(rows[0]["posting_date"])
-		to_date = getdate(rows[-1]["posting_date"])
-		loan = key[0]
-		loan_disbursement = key[1]
-
-		reversed_accruals = reverse_loan_interest_accruals(
-			loan, from_date, interest_type="Normal Interest", loan_disbursement=loan_disbursement
-		)
-
-		reverse_demands(loan, from_date, demand_type="EMI", loan_disbursement=loan_disbursement)
-
-		for payment in rows:
-			loan_repayment = frappe.get_doc(payment)
-			loan_repayment.flags.in_bulk = True
-			loan_repayment.submit()
-
-			frappe.get_doc(
-				{
-					"doctype": "Process Loan Interest Accrual",
-					"loan": loan,
-					"posting_date": getdate(payment.get("posting_date")),
-				}
-			).submit()
-
-			frappe.get_doc(
-				{
-					"doctype": "Process Loan Demand",
-					"loan": loan,
-					"posting_date": getdate(payment.get("posting_date")),
-				}
-			).submit()
-
-			loan_repayment.flags.in_bulk = False
-
-		create_process_loan_classification(
-			posting_date=to_date, loan=loan, loan_disbursement=loan_disbursement
-		)
-
-		if reversed_accruals:
-			dates = [getdate(d.get("posting_date")) for d in reversed_accruals]
-			max_date = max(dates)
-			if getdate(max_date) > getdate(to_date):
-				process_loan_interest_accrual_for_loans(posting_date=max_date, loan=loan)
-				process_daily_loan_demands(posting_date=add_days(max_date, 1), loan=loan)
-
-
-def group_by_loan_and_disbursement(data):
-	grouped_data = {}
-	for row in data:
-		grouped_data.setdefault((row.get("against_loan"), row.get("loan_disbursement")), []).append(row)
-
-	return grouped_data
-
-
+	
 
 import frappe
 import pandas as pd
@@ -3377,4 +3312,3 @@ def bulk_import_loan_repayments(file_url):
 
 
 
->>>>>>> Stashed changes

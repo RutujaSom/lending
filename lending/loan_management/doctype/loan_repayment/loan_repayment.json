@@ -540,27 +540,16 @@
    "label": "Is Backdated"
   },
   {
-<<<<<<< Updated upstream
-   "fieldname": "value_date",
-   "fieldtype": "Datetime",
-   "label": "Value Date",
-   "reqd": 1
-=======
    "fieldname": "created_by",
    "fieldtype": "Data",
    "label": "Created By",
    "read_only": 1
->>>>>>> Stashed changes
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
-<<<<<<< Updated upstream
- "modified": "2025-05-04 15:15:46.848626",
-=======
  "modified": "2025-09-02 10:40:02.308484",
->>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Repayment",

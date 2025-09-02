@@ -56,13 +56,8 @@ class LoanDisbursement(AccountsController):
 
 		against_loan: DF.Link
 		amended_from: DF.Link | None
-<<<<<<< Updated upstream
-		applicant: DF.DynamicLink
-		applicant_type: DF.Literal["Employee", "Member", "Customer"]
-=======
 		applicant: DF.Link
 		applicant_type: DF.Literal["Loan Member"]
->>>>>>> Stashed changes
 		bank_account: DF.Link | None
 		bpi_amount_difference: DF.Currency
 		bpi_difference_date: DF.Date | None

@@ -37,12 +37,8 @@ class LoanApplication(Document):
 		amended_from: DF.Link | None
 		applicant: DF.DynamicLink
 		applicant_name: DF.Data | None
-<<<<<<< Updated upstream
-		applicant_type: DF.Literal["Employee", "Member", "Customer"]
-=======
 		applicant_type: DF.Literal["Loan Member"]
 		co_borrower: DF.Link | None
->>>>>>> Stashed changes
 		company: DF.Link
 		description: DF.SmallText | None
 		is_secured_loan: DF.Check
@@ -347,8 +343,6 @@ def get_proposed_pledge(securities):
 	proposed_pledges["maximum_loan_amount"] = maximum_loan_amount
 
 	return proposed_pledges
-<<<<<<< Updated upstream
-=======
 
 
 
@@ -436,4 +430,3 @@ def bulk_import_loan_applications(file_url):
             errors.append(f"Row {idx+1}: {str(e)}")
 
     return f"success_count: {len(success)}, error_count: {len(errors)}"
->>>>>>> Stashed changes

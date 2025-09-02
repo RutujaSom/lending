@@ -39,11 +39,7 @@
    "fieldname": "applicant_type",
    "fieldtype": "Select",
    "label": "Applicant Type",
-<<<<<<< Updated upstream
-   "options": "Employee\nMember\nCustomer",
-=======
    "options": "Loan Member",
->>>>>>> Stashed changes
    "reqd": 1
   },
   {
@@ -227,11 +223,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
-<<<<<<< Updated upstream
- "modified": "2025-03-19 11:46:51.585652",
-=======
  "modified": "2025-08-30 17:09:36.207975",
->>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Application",
