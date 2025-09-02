@@ -56,8 +56,13 @@ class LoanDisbursement(AccountsController):
 
 		against_loan: DF.Link
 		amended_from: DF.Link | None
+<<<<<<< Updated upstream
 		applicant: DF.DynamicLink
 		applicant_type: DF.Literal["Employee", "Member", "Customer"]
+=======
+		applicant: DF.Link
+		applicant_type: DF.Literal["Loan Member"]
+>>>>>>> Stashed changes
 		bank_account: DF.Link | None
 		bpi_amount_difference: DF.Currency
 		bpi_difference_date: DF.Date | None
@@ -393,6 +398,8 @@ class LoanDisbursement(AccountsController):
 			],
 			as_dict=1,
 		)
+		print('possible_disbursal_amount ....',possible_disbursal_amount)
+		print('self.disbursed_amount ....',self.disbursed_amount)
 
 		if not self.disbursed_amount:
 			frappe.throw(_("Disbursed amount cannot be zero"))
@@ -819,6 +826,7 @@ def get_disbursal_amount(loan, on_current_security_price=0):
 		"Loan",
 		loan,
 		[
+			'name',
 			"loan_amount",
 			"disbursed_amount",
 			"total_payment",
@@ -842,6 +850,7 @@ def get_disbursal_amount(loan, on_current_security_price=0):
 	):
 		return 0
 
+	print('loan_details ....',loan_details)
 	pending_principal_amount = get_pending_principal_amount(loan_details)
 
 	security_value = 0.0
@@ -850,16 +859,20 @@ def get_disbursal_amount(loan, on_current_security_price=0):
 
 	if loan_details.is_secured_loan and not on_current_security_price:
 		security_value = get_maximum_amount_as_per_pledged_security(loan)
+		print('security_value .....,,,',security_value)
 
 	if not security_value and not loan_details.is_secured_loan:
+		print('in if ....')
 		security_value = flt(loan_details.loan_amount)
 
 	disbursal_amount = flt(security_value) - flt(pending_principal_amount)
+	print('disbursal_amount ...',disbursal_amount,'pending_principal_amount ...',pending_principal_amount)
 
 	if (
 		loan_details.is_term_loan
 		and (disbursal_amount + loan_details.loan_amount) > loan_details.loan_amount
 	):
+		print('loan_details.loan_amount ...',loan_details.loan_amount)
 		disbursal_amount = loan_details.loan_amount - loan_details.disbursed_amount
 
 	return disbursal_amount, pending_principal_amount
@@ -869,3 +882,184 @@ def get_maximum_amount_as_per_pledged_security(loan):
 	return flt(
 		frappe.db.get_value("Loan Security Assignment", {"loan": loan}, [{"SUM": "maximum_loan_value"}])
 	)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------------------------------------------------------
+
+
+
+import frappe
+import pandas as pd
+from datetime import datetime
+
+@frappe.whitelist()
+def bulk_import_loan_disbursement(file_url):
+    print('bulk_import_loan_disbursement ....')
+    # Get File doc
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+
+    # Read file with pandas
+    if file_url.endswith(".csv"):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path)
+
+    success = []
+    errors = []
+
+    for idx, row in df.iterrows():
+        try:
+            print('loan .....',row.get("LOAN ID"))
+            # --- Find Loan Application ---
+            loan_name = frappe.get_doc("Loan", {"loan_id": row.get("LOAN ID")})
+            if not loan_name:
+                raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+            print('loan_name .....',loan_name)
+
+            # --- Parse Dates ---
+            disbursement_date = row.get("LOAN SANCTION DATE/ trasancation date")
+            if isinstance(disbursement_date, str):
+                for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d"):
+                    try:
+                        disbursement_date = datetime.strptime(disbursement_date, fmt).date()
+                        break
+                    except:
+                        continue
+
+            # --- Get Applicant ---
+            print('row.get("MEMBER NO") ...',row.get("MEMBER NO"))
+            applicant = frappe.get_value("Loan Member", {"member_id": row.get("MEMBER NO")}, "name")
+            if not applicant:
+                raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
+
+
+            # --- Prepare Data ---
+            disbursement_data = {
+                "doctype": "Loan Disbursement",
+                "against_loan": loan_name.name,
+                "disbursement_date": disbursement_date,
+                "disbursed_amount": row.get("LOAN AMOUNT"),
+                "mode_of_payment": row.get("MODE OF PAYMENT"),
+                "disbursement_account": row.get("DISBURSEMENT ACCOUNT"),
+                "loan_account": row.get("LOAN ACCOUNT"),
+                "company": "Excellminds (Demo)",
+                "reference_number": row.get("REFERENCE NO"),
+                "reference_date": row.get("REFERENCE DATE"),
+				"applicant_type":"LOAN MEMBER",
+				"applicant":applicant,
+				"sanctioned_loan_amount":loan_name.loan_amount,
+				"current_disbursed_amount":loan_name.disbursed_amount,
+				"monthly_repayment_amount":loan_name.monthly_repayment_amount,
+
+            }
+
+            # --- Create & Submit Loan Disbursement ---
+            disb_doc = frappe.get_doc(disbursement_data)
+            disb_doc.insert()
+            # disb_doc.submit()
+            print('disb_doc ...',disb_doc)
+
+            success.append(disb_doc.name)
+
+        except Exception as e:
+            # return f"e ....{e}"
+            frappe.log_error(f"Bulk Loan Disbursement Error (Row {idx+1}): {str(e)}")
+            errors.append(f"Row {idx+1}: {str(e)}")
+
+    return f"success_count: {len(success)}, error_count: {len(errors)}"
+
+
+
+
+
+
+
+@frappe.whitelist()
+def import_and_submit_disbursement(file_url):
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+
+    # Read file with pandas
+    if file_url.endswith(".csv"):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path)
+	# ✅ Keep only EMI No = 1 records for each Loan ID
+    df = df[df["EMI NO"] == 1]
+    print('df ...',df)
+
+    success, errors = [], []
+
+    for _, row in df.iterrows():
+        try:
+            loan_id = row.get("LOAN ID")
+            repay_start = row.get("EMI DATE")
+
+            print('loan .....',row.get("LOAN ID"))
+			# --- Find Loan Application ---
+            loan_name = frappe.get_doc("Loan", {"loan_id": row.get("LOAN ID")})
+            if not loan_name:
+                raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+            print('loan_name .....',loan_name)
+
+
+            if not loan_id or not repay_start:
+                raise Exception("Loan ID and Repayment Start Date are required")
+            print('before ...')
+            # --- Find matching Loan Disbursement (Draft only) ---
+            disb_name = frappe.db.get_value(
+                "Loan Disbursement",
+                {
+                    # "loan": loan_id,
+					"against_loan": loan_name.name,
+                    # "repayment_start_date": repay_start,
+                    "docstatus": 0
+                },
+                "name"
+            )
+            print('disb_name ...',disb_name)
+
+            if not disb_name:
+                raise Exception(f"No Draft Loan Disbursement found for Loan {loan_id} with Repayment Start {repay_start}")
+
+            # --- Load and Submit ---
+            disb_doc = frappe.get_doc("Loan Disbursement", disb_name)
+            disb_doc.submit()
+
+            success.append({
+                # "against_loan": loan_name.name,
+                "repayment_start_date": repay_start,
+                "disbursement": disb_name,
+                "status": "Submitted"
+            })
+
+        except Exception as e:
+            # return f"e ....,{e}"
+            frappe.log_error(f"Bulk Loan Disbursement Error (Row: {str(e)}")
+            errors.append({"row": dict(row), "error": str(e)})
+
+    return f"success_count: {len(success)}, error_count: {len(errors)}"

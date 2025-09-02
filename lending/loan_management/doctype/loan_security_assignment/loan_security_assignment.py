@@ -23,12 +23,11 @@ class LoanSecurityAssignment(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from lending.loan_management.doctype.pledge.pledge import Pledge
 
 		amended_from: DF.Link | None
 		applicant: DF.DynamicLink
-		applicant_type: DF.Literal["Employee", "Member", "Customer"]
+		applicant_type: DF.Literal["Loan Member"]
 		company: DF.Link
 		description: DF.Text | None
 		loan: DF.Link | None
@@ -38,15 +37,7 @@ class LoanSecurityAssignment(Document):
 		reference_no: DF.Data | None
 		release_time: DF.Datetime | None
 		securities: DF.Table[Pledge]
-		status: DF.Literal[
-			"Pledge Requested",
-			"Unpledged",
-			"Pledged",
-			"Release Requested",
-			"Released",
-			"Repossessed",
-			"Cancelled",
-		]
+		status: DF.Literal["Pledge Requested", "Unpledged", "Pledged", "Release Requested", "Released", "Repossessed", "Cancelled"]
 		total_security_value: DF.Currency
 	# end: auto-generated types
 

@@ -11,22 +11,78 @@ def add_single_month(date):
 		return add_months(date, 1)
 
 
+<<<<<<< Updated upstream
 def get_monthly_repayment_amount(loan_amount, rate_of_interest, repayment_periods, frequency):
 	if frequency == "One Time":
 		repayment_periods = 1
 
 	if rate_of_interest:
 		monthly_interest_rate = flt(rate_of_interest) / (get_frequency(frequency) * 100)
+=======
+# def get_monthly_repayment_amount(loan_amount, rate_of_interest, repayment_periods, frequency, repayments_days=0):
+# 	if frequency == "One Time":
+# 		repayment_periods = 1
+
+# 	if rate_of_interest:
+# 		print('frequency ...',frequency, 'vrepayments_days ...',repayments_days)
+# 		monthly_interest_rate = flt(rate_of_interest) / (get_frequency(frequency) * 100)
+# 		monthly_repayment_amount = math.ceil(
+# 			(loan_amount * monthly_interest_rate * (1 + monthly_interest_rate) ** repayment_periods)
+# 			/ ((1 + monthly_interest_rate) ** repayment_periods - 1)
+# 		)
+# 	else:
+# 		monthly_repayment_amount = math.ceil(flt(loan_amount) / repayment_periods)
+# 	return monthly_repayment_amount
+
+
+# def get_frequency(frequency):
+# 	return {
+# 		"Monthly": 12,
+# 		"Bi-Weekly": 26,
+# 		"Weekly": 52,
+# 		"Daily": 365,
+# 		"Quarterly": 4,
+# 		"One Time": 1,
+# 	}.get(frequency)
+
+def get_monthly_repayment_amount(loan_amount, rate_of_interest, repayment_periods, frequency, repayments_days=0):
+	if frequency == "One Time":
+		repayment_periods = 1
+
+	# get frequency value (installments per year)
+	freq_value = get_frequency(frequency, repayments_days)
+	# print('freq_value ....',freq_value)
+	if rate_of_interest:
+		monthly_interest_rate = flt(rate_of_interest) / (freq_value * 100)
+>>>>>>> Stashed changes
 		monthly_repayment_amount = math.ceil(
 			(loan_amount * monthly_interest_rate * (1 + monthly_interest_rate) ** repayment_periods)
 			/ ((1 + monthly_interest_rate) ** repayment_periods - 1)
 		)
 	else:
 		monthly_repayment_amount = math.ceil(flt(loan_amount) / repayment_periods)
+<<<<<<< Updated upstream
 	return monthly_repayment_amount
 
 
 def get_frequency(frequency):
+=======
+
+	return monthly_repayment_amount
+
+
+def get_frequency(frequency, repayments_days=0):
+	# Handle custom case
+	if frequency == "Custom":
+		if repayments_days and repayments_days > 0:
+			# convert days into number of repayments per year
+			days = math.floor(365 / repayments_days)
+			return days+1
+		else:
+			frappe.throw(_("For Custom frequency, please provide a valid Repayments Days value"))
+
+	# Default mappings
+>>>>>>> Stashed changes
 	return {
 		"Monthly": 12,
 		"Bi-Weekly": 26,
@@ -34,7 +90,11 @@ def get_frequency(frequency):
 		"Daily": 365,
 		"Quarterly": 4,
 		"One Time": 1,
+<<<<<<< Updated upstream
 	}.get(frequency)
+=======
+	}.get(frequency, 0)
+>>>>>>> Stashed changes
 
 
 def set_demand(row_name):

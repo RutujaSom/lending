@@ -318,6 +318,10 @@ class LoanRepaymentSchedule(Document):
 		) = self.add_rows_from_prev_disbursement("repayment_schedule", 100, 100)
 
 		if flt(balance_amount, self.precision) > 0:
+<<<<<<< Updated upstream
+=======
+			# print('make_repayment_schedule .....')
+>>>>>>> Stashed changes
 			self.make_repayment_schedule(
 				"repayment_schedule",
 				previous_interest_amount,
@@ -386,6 +390,10 @@ class LoanRepaymentSchedule(Document):
 		moratorium_interest = 0
 		row = 0
 		if not self.restructure_type and self.repayment_method != "Repay Fixed Amount per Period":
+<<<<<<< Updated upstream
+=======
+			# print('self.repayment_days ....',self.repayment_days)
+>>>>>>> Stashed changes
 			monthly_repayment_amount = get_monthly_repayment_amount(
 				balance_amount, rate_of_interest, self.repayment_periods, self.repayment_frequency
 			)
@@ -1006,3 +1014,70 @@ class LoanRepaymentSchedule(Document):
 
 	def increment_number_of_rows(self, payment_date):
 		self.number_of_rows += 1
+
+
+
+
+
+# ----------------------------------------------------
+import frappe
+import pandas as pd
+from frappe.utils import get_files_path, getdate
+
+@frappe.whitelist()
+def bulk_update_repayment_dates(file_url):
+    try:
+        file_doc = frappe.get_doc("File", {"file_url": file_url})
+        file_path = file_doc.get_full_path()
+
+		# Read file with pandas
+        df = pd.read_excel(file_path)
+        # print('df ...///....  ', df)
+
+        success, errors = [], []
+
+        for idx, row in df.iterrows():
+            try:
+                loan_id = row.get("LOAN ID")
+                emi_no = row.get("EMI NO")   # assuming Excel has emi_no column
+                new_date = row.get("EMI DATE")
+
+				# --- Find Loan Application ---
+                loan_name = frappe.get_doc("Loan", {"loan_id": row.get("LOAN ID")})
+                if not loan_name:
+                    raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+
+                # Find repayment schedule record
+                schedule = frappe.get_all(
+                    "Loan Repayment Schedule",
+                    filters={"loan": loan_name.name},
+                    fields=["name"]
+                )
+                # print('schedule .....',schedule)
+                if not schedule:
+                    # print('in not schedule.....')
+                    errors.append(f"Row {idx+1}: No repayment schedule found for loan {loan_id}")
+                    continue
+
+                doc = frappe.get_doc("Loan Repayment Schedule", schedule[0].name)
+               
+                parent_name = schedule[0].name
+                # Update child row directly
+                updated = frappe.db.set_value(
+                    "Repayment Schedule",   # replace with your child table doctype
+                    {"parent": parent_name, "idx": int(emi_no)},
+                    "payment_date",
+                    getdate(new_date),
+                )
+
+                doc.save(ignore_permissions=True)
+                frappe.db.commit()
+
+                success.append(f"Row {idx+1}: Updated EMI {emi_no} for Loan {loan_id}")
+            except Exception as e:
+                errors.append(f"Row {idx+1}: {str(e)}")
+        return f"success_count: {len(success)}, error_count: {len(errors)}"
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Bulk Update Repayment Dates Error")
+        return f"{str(e)}"

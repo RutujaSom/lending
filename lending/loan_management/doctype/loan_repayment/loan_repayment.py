@@ -40,26 +40,20 @@ class LoanRepayment(AccountsController):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from lending.loan_management.doctype.loan_repayment_charges.loan_repayment_charges import (
-			LoanRepaymentCharges,
-		)
-		from lending.loan_management.doctype.loan_repayment_detail.loan_repayment_detail import (
-			LoanRepaymentDetail,
-		)
-		from lending.loan_management.doctype.prepayment_charges.prepayment_charges import (
-			PrepaymentCharges,
-		)
+		from lending.loan_management.doctype.loan_repayment_charges.loan_repayment_charges import LoanRepaymentCharges
+		from lending.loan_management.doctype.loan_repayment_detail.loan_repayment_detail import LoanRepaymentDetail
+		from lending.loan_management.doctype.prepayment_charges.prepayment_charges import PrepaymentCharges
 
 		against_loan: DF.Link
 		amended_from: DF.Link | None
 		amount_paid: DF.Currency
-		applicant: DF.DynamicLink
-		applicant_type: DF.Literal["Employee", "Member", "Customer"]
+		applicant: DF.Link
+		applicant_type: DF.Literal["Loan Member"]
 		bank_account: DF.Link | None
 		clearance_date: DF.Date | None
 		company: DF.Link | None
 		cost_center: DF.Link | None
+		created_by: DF.Data | None
 		days_past_due: DF.Int
 		due_date: DF.Date | None
 		excess_amount: DF.Currency
@@ -95,25 +89,7 @@ class LoanRepayment(AccountsController):
 		reference_number: DF.Data | None
 		repayment_details: DF.Table[LoanRepaymentDetail]
 		repayment_schedule_type: DF.Data | None
-		repayment_type: DF.Literal[
-			"Normal Repayment",
-			"Interest Waiver",
-			"Penalty Waiver",
-			"Charges Waiver",
-			"Principal Capitalization",
-			"Principal Adjustment",
-			"Interest Carry Forward",
-			"Write Off Recovery",
-			"Security Deposit Adjustment",
-			"Advance Payment",
-			"Pre Payment",
-			"Subsidy Adjustments",
-			"Loan Closure",
-			"Partial Settlement",
-			"Full Settlement",
-			"Write Off Settlement",
-			"Charge Payment",
-		]
+		repayment_type: DF.Literal["Normal Repayment", "Interest Waiver", "Penalty Waiver", "Charges Waiver", "Principal Capitalization", "Principal Adjustment", "Interest Carry Forward", "Write Off Recovery", "Security Deposit Adjustment", "Advance Payment", "Pre Payment", "Subsidy Adjustments", "Loan Closure", "Partial Settlement", "Full Settlement", "Write Off Settlement", "Charge Payment"]
 		shortfall_amount: DF.Currency
 		total_charges_paid: DF.Currency
 		total_charges_payable: DF.Currency
@@ -128,6 +104,18 @@ class LoanRepayment(AccountsController):
 
 	def before_validate(self):
 		self.set_repayment_account()
+
+	def before_save(self):
+		if self.applicant and self.applicant_type == "Loan Member":
+            # get loan group from Loan Member
+			loan_group = frappe.db.get_value("Loan Member", self.applicant, "group")
+			
+			if loan_group:
+                # get employee linked with this loan_group from Group Assignment
+				employee = frappe.db.get_value("Loan Group Assignment", {"loan_group": loan_group}, "employee")
+				if employee:
+					self.created_by = employee   # employee is Link field in Loan Repayment
+
 
 	def validate(self):
 		charges = None
@@ -200,8 +188,26 @@ class LoanRepayment(AccountsController):
 			process_loan_interest_accrual_for_loans,
 		)
 
+<<<<<<< Updated upstream
 		if self.flags.from_bulk_payment:
 			return
+=======
+		# Ensure amount field exists in Loan Repayment
+		if self.amount_paid:
+			
+			# Create new record in Collection In Hand
+			collection = frappe.get_doc({
+				"doctype": "Collection In Hand",
+				"loan_repayment": self.name,     # Link back to repayment
+				"amount": self.amount_paid,      # Current repayment
+				"posting_date": frappe.utils.nowdate(),
+				"employee": self.created_by,
+				"loan": self.against_loan,
+				"applicant":self.applicant,
+			})
+			collection.insert(ignore_permissions=True)
+
+>>>>>>> Stashed changes
 		if self.is_backdated:
 			if frappe.flags.in_test:
 				self.create_repost()
@@ -3168,6 +3174,7 @@ def loan_wise_submit(loan, rows):
 		process_loan_interest_accrual_for_loans,
 	)
 
+<<<<<<< Updated upstream
 	rows = list(rows)
 	from_date = getdate(rows[0]["value_date"])
 	to_date = getdate(rows[-1]["value_date"])
@@ -3185,3 +3192,189 @@ def loan_wise_submit(loan, rows):
 	process_daily_loan_demands(posting_date=to_date, loan=loan)
 	process_loan_interest_accrual_for_loans(posting_date=to_date, loan=loan)
 	repost.submit()
+=======
+	# sort data by posting date
+	data = sorted(data, key=lambda x: x["posting_date"])
+
+	grouped_data = group_by_loan_and_disbursement(data)
+	for key, rows in grouped_data.items():
+		from_date = getdate(rows[0]["posting_date"])
+		to_date = getdate(rows[-1]["posting_date"])
+		loan = key[0]
+		loan_disbursement = key[1]
+
+		reversed_accruals = reverse_loan_interest_accruals(
+			loan, from_date, interest_type="Normal Interest", loan_disbursement=loan_disbursement
+		)
+
+		reverse_demands(loan, from_date, demand_type="EMI", loan_disbursement=loan_disbursement)
+
+		for payment in rows:
+			loan_repayment = frappe.get_doc(payment)
+			loan_repayment.flags.in_bulk = True
+			loan_repayment.submit()
+
+			frappe.get_doc(
+				{
+					"doctype": "Process Loan Interest Accrual",
+					"loan": loan,
+					"posting_date": getdate(payment.get("posting_date")),
+				}
+			).submit()
+
+			frappe.get_doc(
+				{
+					"doctype": "Process Loan Demand",
+					"loan": loan,
+					"posting_date": getdate(payment.get("posting_date")),
+				}
+			).submit()
+
+			loan_repayment.flags.in_bulk = False
+
+		create_process_loan_classification(
+			posting_date=to_date, loan=loan, loan_disbursement=loan_disbursement
+		)
+
+		if reversed_accruals:
+			dates = [getdate(d.get("posting_date")) for d in reversed_accruals]
+			max_date = max(dates)
+			if getdate(max_date) > getdate(to_date):
+				process_loan_interest_accrual_for_loans(posting_date=max_date, loan=loan)
+				process_daily_loan_demands(posting_date=add_days(max_date, 1), loan=loan)
+
+
+def group_by_loan_and_disbursement(data):
+	grouped_data = {}
+	for row in data:
+		grouped_data.setdefault((row.get("against_loan"), row.get("loan_disbursement")), []).append(row)
+
+	return grouped_data
+
+
+
+import frappe
+import pandas as pd
+from frappe.utils import getdate, nowdate
+
+@frappe.whitelist()
+def bulk_import_loan_repayments(file_url):
+    try:
+        file_doc = frappe.get_doc("File", {"file_url": file_url})
+        file_path = file_doc.get_full_path()
+        df = pd.read_excel(file_path)
+
+        success, errors = [], []
+
+        for idx, row in df.iterrows():
+            try:
+                loan_id = row.get("LOAN ID")
+                posting_date = row.get("EMI DATE")
+                received_date = row.get("RECEIVED DATE") or posting_date
+
+                # --- 1. Find Loan ---
+                loan = frappe.get_doc("Loan", {"loan_id": loan_id})
+                if not loan:
+                    errors.append(f"Row {idx+1}: Loan {loan_id} not found")
+                    continue
+                print('received_date ....',received_date)
+
+                # Only process if received_date exists
+                if received_date and str(received_date).upper() not in ["NIL", "NONE", "NULL","NAN"]:
+                    print('in if .......')
+                    try:
+                        # --- 2. Create Interest Accrual ---
+                        accrual = frappe.new_doc("Process Loan Interest Accrual")
+                        # print('accrual ....',accrual)
+                        accrual.loan = loan.name
+                        accrual.company = "Excellminds (Demo)"
+                        accrual.posting_date = posting_date
+                        print('accrual ...////....',accrual)
+                        accrual.insert(ignore_permissions=True)
+                        accrual.save()
+                        accrual.submit()
+                        print('accrual submit....',accrual)
+                    except Exception as e:
+                        print('e ....',e)
+
+                    # --- 3. Create Loan Demand ---
+                    demand = frappe.new_doc("Process Loan Demand")
+                    print('demand .....',demand)
+                    demand.loan = loan.name
+                    demand.company = "Excellminds (Demo)"
+                    demand.posting_date = posting_date
+                    demand.insert(ignore_permissions=True)
+                    demand.submit()
+                    print('demand .....',demand)
+
+                    # --- 4. Process Repayments for Multiple Modes ---
+                    payments = []
+
+                    # Cash
+                    if row.get("CASH") and float(row.get("CASH")) > 0:
+                        payments.append({
+                            "mode": "Cash",
+                            "amount": float(row.get("CASH")),
+                            "ref_no": None
+                        })
+
+                    # Online 1
+                    if row.get("ONLINE") and float(row.get("ONLINE")) > 0:
+                        payments.append({
+                            "mode": "UPI",
+                            "amount": float(row.get("ONLINE")),
+                            "ref_no": row.get("UTR NO")
+                        })
+
+                    # Online 2
+                    if row.get("ONLINE_1") and float(row.get("ONLINE_1")) > 0:  # Excel duplicate col name
+                        payments.append({
+                            "mode": "UPI",
+                            "amount": float(row.get("ONLINE_1")),
+                            "ref_no": row.get("UTR NO_1")
+                        })
+
+                    # Loop through each payment and create repayment record
+                    for pay in payments:
+                        try:
+                            print('in paument .....', pay)
+                            repayment = frappe.new_doc("Loan Repayment")
+                            repayment.against_loan = loan.name
+                            repayment.posting_date = getdate(posting_date)
+                            repayment.amount_paid = pay["amount"]
+                            repayment.mode_of_payment = pay["mode"]
+                            repayment.reference_number = pay["ref_no"]
+                            repayment.reference_date = getdate(received_date)
+                            repayment.remarks = row.get("REMARK IF ANY")
+                            repayment.insert(ignore_permissions=True)
+                            repayment.submit()
+                            print(repayment,' ....... repaymant')
+                        except Exception as e:
+                            print('in reys .....e .....',e)
+							
+
+                        success.append(
+                            f"Row {idx+1}: {pay['amount']} via {pay['mode']} posted for Loan {loan_id} (Repayment {repayment.name})"
+                        )
+
+                    frappe.db.commit()
+
+            except Exception as e:
+                frappe.db.rollback()
+                errors.append(f"Row {idx+1}: {str(e)}")
+
+        return {
+            "success_count": len(success),
+            "error_count": len(errors),
+            "success": success,
+            "errors": errors
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Bulk Import Loan Repayments Error")
+        return {"error": str(e)}
+
+
+
+
+>>>>>>> Stashed changes

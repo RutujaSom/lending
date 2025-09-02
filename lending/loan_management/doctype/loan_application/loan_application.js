@@ -141,3 +141,105 @@ frappe.ui.form.on("Proposed Pledge", {
 		frm.events.calculate_amounts(frm, cdt, cdn);
 	},
 })
+
+
+
+
+
+
+
+
+
+
+frappe.ui.form.on('Loan Application', {
+    refresh(frm) {
+        if (!frm.is_new()) {
+            frm.add_custom_button('Import Loan Application', () => {
+                open_import_dialog(frm);
+            });
+        }
+    }
+});
+
+
+
+function open_import_dialog() {
+    const d = new frappe.ui.Dialog({
+        title: 'Import Loan Application',
+        fields: [
+            {
+                label: 'File Type',
+                fieldname: 'file_type',
+                fieldtype: 'Select',
+                options: ['CSV', 'Excel'],
+                reqd: 1
+            },
+            {
+                label: 'File',
+                fieldname: 'file_url',
+                fieldtype: 'Attach',
+                reqd: 1
+            }
+        ],
+        primary_action_label: 'Import',
+        primary_action(values) {
+            frappe.call({
+                // method: "lending.loan_management.doctype.loan_application.loan_application.bulk_import_loan_applications",
+				method: "lending.loan_management.doctype.loan_application.loan_application.bulk_import_loan_applications",
+                args: {
+                    file_url: values.file_url,
+                    file_type: values.file_type
+                },
+                callback(r) {
+                    if (r.message) {
+                        frappe.msgprint(r.message);
+                        frappe.listview.refresh();  // refresh the list view
+                    }
+                    d.hide();
+                }
+            });
+        }
+    });
+
+    d.show();
+}
+
+
+
+frappe.ui.form.on("Loan Application", {
+    applicant: function(frm) {
+        if (frm.doc.applicant) {
+            frappe.db.get_value("Loan Member", frm.doc.applicant, "group", (r) => {
+                if (r && r.group) {
+                    frm.set_query("co_borrower", function() {
+                        return {
+                            filters: {
+                                group: r.group,
+                                name: ["!=", frm.doc.loan_member]  // prevent self-selection
+                            }
+                        };
+                    });
+                }
+				
+            });
+			frappe.db.get_value("Loan Member", frm.doc.applicant, "nominee", function(value) {
+                if (value && value.nominee) {
+                    frm.set_value("co_borrower", value.nominee);
+                }
+            });
+        }
+    },
+	refresh: function(frm) {
+        frm.set_query("applicant", function() {
+            if (frm.doc.applicant_type === "Loan Member") {
+                return {
+                    filters: {
+                        status: "Verified"
+                    }
+                };
+            }
+        });
+    }
+});
+
+

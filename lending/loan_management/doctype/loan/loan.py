@@ -47,14 +47,19 @@ class Loan(AccountsController):
 		)
 
 		amended_from: DF.Link | None
-		applicant: DF.DynamicLink
+		applicant: DF.Link
 		applicant_name: DF.Data | None
+<<<<<<< Updated upstream
 		applicant_type: DF.Literal["Employee", "Member", "Customer"]
+=======
+		applicant_type: DF.Literal["Loan Member"]
+>>>>>>> Stashed changes
 		available_limit_amount: DF.Currency
 		cancellation_date: DF.Date | None
 		classification_code: DF.Link | None
 		classification_name: DF.Data | None
 		closure_date: DF.Date | None
+		co_borrower: DF.Data | None
 		company: DF.Link
 		cost_center: DF.Link | None
 		credit_adjustment_amount: DF.Currency
@@ -79,6 +84,7 @@ class Loan(AccountsController):
 		loan_application: DF.Link | None
 		loan_category: DF.Link | None
 		loan_charges: DF.Table[LoanDisbursementCharge]
+		loan_id: DF.Data
 		loan_partner: DF.Link | None
 		loan_product: DF.Link
 		loan_restructure_count: DF.Int
@@ -1793,3 +1799,106 @@ def get_dashboard_info(loan):
 	loan_info["currency"] = frappe.get_cached_value("Company", loan.company, "default_currency")
 
 	return loan_info
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import frappe
+import pandas as pd
+from datetime import datetime
+
+
+@frappe.whitelist()
+def bulk_import_loans(file_url):
+    # Get File doc
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()   # full path to file in sites/private/files/ or sites/{sitename}/public/files/
+
+    # Read file with pandas
+    if file_url.endswith(".csv"):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path)
+
+    print('file_path ...', file_path, 'df ....', df)
+
+    success = []
+    errors = []
+
+    for idx, row in df.iterrows():
+        # print('row ....', row)
+        try:
+            # print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
+            # --- Get Loan Product ---
+            loan_product = frappe.get_value("Loan Product", {"rate_of_interest": row.get("ROI")}, "name")
+            if not loan_product:
+                raise Exception(f"Loan Product '{row.get('ROI')}' not found")
+
+            # --- Get Applicant ---
+            print('row.get("MEMBER NO") ...',row.get("MEMBER NO"))
+            applicant = frappe.get_value("Loan Member", {"member_id": row.get("MEMBER NO")}, "name")
+            if not applicant:
+                raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
+
+            loan_application = frappe.get_value("Loan Application", {"applicant": applicant, "loan_amount":row.get("LOAN AMOUNT")}, "name")
+            if not loan_application:
+                raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
+
+            print('loan_application ...',loan_application)
+            # --- Parse Date ---
+            loan_date = row.get("LOAN SANCTION DATE/ trasancation date")
+            if isinstance(loan_date, str):
+                for fmt in ("%d-%m-%Y", "%d/%m/%Y"):
+                    try:
+                        loan_date = datetime.strptime(loan_date, fmt).date()
+                        break
+                    except:
+                        continue
+
+            print('loan_product .....', loan_product, row.get("ROI"),'row.get("ROI")')
+
+            # Prepare data
+            loan_data = {
+                "doctype": "Loan",
+                "applicant_type": "Loan Member",
+                "applicant": applicant,
+                "company": "Excellminds (Demo)",
+                "loan_product": loan_product,
+                "loan_amount": row.get("LOAN AMOUNT"),
+                "is_secured_loan": 0,
+                "is_term_loan": 1,
+                "repayment_method": "Repay Over Number of Periods",
+                "repayment_periods": row.get("TERM IN MONTHS"),
+                "repayment_amount": row.get("EMI"),
+                "rate_of_interest": row.get("ROI"),
+                "posting_date": loan_date,
+				"loan_id": row.get("LOAN ID"),
+				"loan_application":loan_application
+            }
+            print('loan_data ...',loan_data)
+
+            loan_doc = frappe.get_doc(loan_data)
+            loan_doc.insert()
+            loan_doc.submit()
+
+            success.append(loan_doc.name)
+
+        except Exception as e:
+            print('e .....',e)
+            # return f'{e}'
+            frappe.log_error(f"Bulk Loan Import Error (Row {idx+1}): {str(e)}")
+            errors.append(f"Row {idx+1}: {str(e)}")
+
+    return f"success_count: {len(success)}, error_count: {len(errors)}"

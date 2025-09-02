@@ -99,3 +99,55 @@ frappe.ui.form.on('Loan Repayment', {
 		});
 	}
 });
+
+
+
+
+frappe.ui.form.on("Loan Repayment", {
+	refresh(frm) {
+        frm.add_custom_button('Import Loan Repayment', () => {
+            open_import_dialog(frm);
+        });
+	},
+});
+
+
+function open_import_dialog() {
+    const d = new frappe.ui.Dialog({
+        title: 'Import Loan Repayment',
+        fields: [
+            {
+                label: 'File Type',
+                fieldname: 'file_type',
+                fieldtype: 'Select',
+                options: ['CSV', 'Excel'],
+                reqd: 1
+            },
+            {
+                label: 'File',
+                fieldname: 'file_url',
+                fieldtype: 'Attach',
+                reqd: 1
+            }
+        ],
+        primary_action_label: 'Import',
+        primary_action(values) {
+            frappe.call({
+				method: "lending.loan_management.doctype.loan_repayment.loan_repayment.bulk_import_loan_repayments",
+                args: {
+                    file_url: values.file_url,
+                    file_type: values.file_type
+                },
+                callback(r) {
+                    if (r.message) {
+                        frappe.msgprint(r.message);
+                        frappe.listview.refresh();  // refresh the list view
+                    }
+                    d.hide();
+                }
+            });
+        }
+    });
+
+    d.show();
+}

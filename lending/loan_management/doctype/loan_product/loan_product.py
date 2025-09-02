@@ -15,11 +15,8 @@ class LoanProduct(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from lending.loan_management.doctype.loan_charges.loan_charges import LoanCharges
-		from lending.loan_management.doctype.loan_product_loan_partner.loan_product_loan_partner import (
-			LoanProductLoanPartner,
-		)
+		from lending.loan_management.doctype.loan_product_loan_partner.loan_product_loan_partner import LoanProductLoanPartner
 
 		additional_interest_accrued: DF.Link | None
 		additional_interest_income: DF.Link | None
@@ -62,13 +59,7 @@ class LoanProduct(Document):
 		product_name: DF.Data
 		rate_of_interest: DF.Percent
 		repayment_date_on: DF.Literal["", "Start of the next month", "End of the current month"]
-		repayment_schedule_type: DF.Literal[
-			"",
-			"Monthly as per repayment start date",
-			"Pro-rated calendar months",
-			"Monthly as per cycle date",
-			"Line of Credit",
-		]
+		repayment_schedule_type: DF.Literal["", "Monthly as per repayment start date", "Pro-rated calendar months", "Monthly as per cycle date", "Line of Credit"]
 		same_as_regular_interest_accounts: DF.Check
 		security_deposit_account: DF.Link
 		subsidy_adjustment_account: DF.Link | None

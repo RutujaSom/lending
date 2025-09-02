@@ -82,7 +82,7 @@
    "fieldname": "applicant_type",
    "fieldtype": "Select",
    "label": "Applicant Type",
-   "options": "Employee\nMember\nCustomer",
+   "options": "Loan Member",
    "search_index": 1
   },
   {
@@ -288,7 +288,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
+<<<<<<< Updated upstream
  "modified": "2025-03-23 17:52:40.723839",
+=======
+ "modified": "2025-08-25 11:21:53.854656",
+>>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Interest Accrual",

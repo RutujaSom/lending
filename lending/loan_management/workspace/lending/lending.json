@@ -1,12 +1,11 @@
 {
- "app": "lending",
  "charts": [
   {
    "chart_name": "New Loans",
    "label": "New Loans"
   }
  ],
- "content": "[{\"id\":\"u4VgJQmS5B\",\"type\":\"chart\",\"data\":{\"chart_name\":\"New Loans\",\"col\":12}},{\"id\":\"_38WStznya\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\",\"col\":12}},{\"id\":\"FnMXBOAVyS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Company\",\"col\":3}},{\"id\":\"t7o_K__1jB\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Application\",\"col\":3}},{\"id\":\"IRiNDC6w1p\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan\",\"col\":3}},{\"id\":\"xbbo0FYbq0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}},{\"id\":\"7ZL4Bro-Vi\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yhyioTViZ3\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports &amp; Masters</b></span>\",\"col\":12}},{\"id\":\"oYFn4b1kSw\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan\",\"col\":4}},{\"id\":\"vZepJF5tl9\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Processes\",\"col\":4}},{\"id\":\"k-393Mjhqe\",\"type\":\"card\",\"data\":{\"card_name\":\"Disbursement and Repayment\",\"col\":4}},{\"id\":\"6crJ0DBiBJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Security\",\"col\":4}},{\"id\":\"8Nc9Vms3yK\",\"type\":\"card\",\"data\":{\"card_name\":\"Taxes and Charges\",\"col\":4}},{\"id\":\"4FHo-JB0QJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Transfers\",\"col\":4}},{\"id\":\"cC9JraXgnP\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Classification\",\"col\":4}},{\"id\":\"aQN7y-zrup\",\"type\":\"card\",\"data\":{\"card_name\":\"Co-Lending\",\"col\":4}},{\"id\":\"didc1K7uY4\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Adjustments\",\"col\":4}},{\"id\":\"wH0P6qZKNg\",\"type\":\"card\",\"data\":{\"card_name\":\"Banking\",\"col\":4}},{\"id\":\"Um5YwxVLRJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "content": "[{\"id\":\"u4VgJQmS5B\",\"type\":\"chart\",\"data\":{\"chart_name\":\"New Loans\",\"col\":12}},{\"id\":\"_38WStznya\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\",\"col\":12}},{\"id\":\"FnMXBOAVyS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Company\",\"col\":3}},{\"id\":\"t7o_K__1jB\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Application\",\"col\":3}},{\"id\":\"IRiNDC6w1p\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan\",\"col\":3}},{\"id\":\"xbbo0FYbq0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}},{\"id\":\"7ZL4Bro-Vi\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yhyioTViZ3\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports &amp; Masters</b></span>\",\"col\":12}},{\"id\":\"oYFn4b1kSw\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan\",\"col\":4}},{\"id\":\"vZepJF5tl9\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Processes\",\"col\":4}},{\"id\":\"k-393Mjhqe\",\"type\":\"card\",\"data\":{\"card_name\":\"Disbursement and Repayment\",\"col\":4}},{\"id\":\"3yrX9EDRjZ\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Collection\",\"col\":4}},{\"id\":\"6crJ0DBiBJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Security\",\"col\":4}},{\"id\":\"8Nc9Vms3yK\",\"type\":\"card\",\"data\":{\"card_name\":\"Taxes and Charges\",\"col\":4}},{\"id\":\"4FHo-JB0QJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Transfers\",\"col\":4}},{\"id\":\"cC9JraXgnP\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Classification\",\"col\":4}},{\"id\":\"aQN7y-zrup\",\"type\":\"card\",\"data\":{\"card_name\":\"Co-Lending\",\"col\":4}},{\"id\":\"didc1K7uY4\",\"type\":\"card\",\"data\":{\"card_name\":\"Loan Adjustments\",\"col\":4}},{\"id\":\"wH0P6qZKNg\",\"type\":\"card\",\"data\":{\"card_name\":\"Banking\",\"col\":4}},{\"id\":\"Um5YwxVLRJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2020-03-12 16:35:55.299820",
  "custom_blocks": [],
  "docstatus": 0,
@@ -332,68 +331,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Loan",
-   "link_count": 5,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Loan Category",
-   "link_count": 0,
-   "link_to": "Loan Category",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Loan Product",
-   "link_count": 0,
-   "link_to": "Loan Product",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Loan Application",
-   "link_count": 0,
-   "link_to": "Loan Application",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Loan",
-   "link_count": 0,
-   "link_to": "Loan",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Loan Restructure",
-   "link_count": 0,
-   "link_to": "Loan Restructure",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Loan Adjustments",
    "link_count": 4,
    "link_type": "DocType",
@@ -560,9 +497,124 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan",
+   "link_count": 7,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Category",
+   "link_count": 0,
+   "link_to": "Loan Category",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Product",
+   "link_count": 0,
+   "link_to": "Loan Product",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Group",
+   "link_count": 0,
+   "link_to": "Loan Group",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Member",
+   "link_count": 0,
+   "link_to": "Loan Member",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Application",
+   "link_count": 0,
+   "link_to": "Loan Application",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan",
+   "link_count": 0,
+   "link_to": "Loan",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Restructure",
+   "link_count": 0,
+   "link_to": "Loan Restructure",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Collection",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Collection In Hand",
+   "link_count": 0,
+   "link_to": "Collection In Hand",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan EMIs",
+   "link_count": 0,
+   "link_to": "loan-emi",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
+<<<<<<< Updated upstream
  "modified": "2025-05-07 15:23:01.851142",
+=======
+ "modified": "2025-08-28 15:51:22.903688",
+>>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Lending",
@@ -573,7 +625,11 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
+<<<<<<< Updated upstream
  "sequence_id": 0.0,
+=======
+ "sequence_id": 1.0,
+>>>>>>> Stashed changes
  "shortcuts": [
   {
    "color": "Grey",
@@ -602,6 +658,11 @@
    "type": "Dashboard"
   }
  ],
+<<<<<<< Updated upstream
  "title": "Lending",
  "type": "Workspace"
 }
+=======
+ "title": "Lending"
+}
+>>>>>>> Stashed changes

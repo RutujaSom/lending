@@ -9,10 +9,12 @@
  "engine": "InnoDB",
  "field_order": [
   "applicant_details_section",
+  "loan_id",
   "applicant_type",
   "applicant",
   "applicant_name",
   "loan_application",
+  "co_borrower",
   "column_break_3",
   "company",
   "posting_date",
@@ -99,16 +101,20 @@
    "fieldname": "applicant_type",
    "fieldtype": "Select",
    "label": "Applicant Type",
+<<<<<<< Updated upstream
    "options": "Employee\nMember\nCustomer",
+=======
+   "options": "Loan Member",
+>>>>>>> Stashed changes
    "reqd": 1,
    "search_index": 1
   },
   {
    "fieldname": "applicant",
-   "fieldtype": "Dynamic Link",
+   "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Applicant",
-   "options": "applicant_type",
+   "options": "Loan Member",
    "reqd": 1,
    "search_index": 1
   },
@@ -705,12 +711,39 @@
   {
    "fieldname": "column_break_qsfx",
    "fieldtype": "Column Break"
+<<<<<<< Updated upstream
+=======
+  },
+  {
+   "depends_on": "eval: doc.is_term_loan && doc.repayment_frequency == \"Custom\"",
+   "fieldname": "repayment_days",
+   "fieldtype": "Int",
+   "label": "Repayment Days"
+  },
+  {
+   "fieldname": "loan_id",
+   "fieldtype": "Data",
+   "label": "Loan Id",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "loan_application.co_borrower",
+   "fieldname": "co_borrower",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "label": "Co-Borrower",
+   "read_only": 1
+>>>>>>> Stashed changes
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
+<<<<<<< Updated upstream
  "modified": "2025-06-23 16:14:48.341833",
+=======
+ "modified": "2025-08-25 12:29:18.178732",
+>>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan",

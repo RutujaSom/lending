@@ -37,7 +37,12 @@ class LoanApplication(Document):
 		amended_from: DF.Link | None
 		applicant: DF.DynamicLink
 		applicant_name: DF.Data | None
+<<<<<<< Updated upstream
 		applicant_type: DF.Literal["Employee", "Member", "Customer"]
+=======
+		applicant_type: DF.Literal["Loan Member"]
+		co_borrower: DF.Link | None
+>>>>>>> Stashed changes
 		company: DF.Link
 		description: DF.SmallText | None
 		is_secured_loan: DF.Check
@@ -69,6 +74,41 @@ class LoanApplication(Document):
 
 		self.get_repayment_details()
 		self.check_sanctioned_amount_limit()
+
+	# def on_submit(self):
+	# 	print('on submit ......')
+	# 	if self.co_borrower:
+	# 		active_loans = frappe.get_value("Loan", {"co_borrower":self.co_borrower,"statue":""})
+	# 		print('.....',len(active_loans))
+    
+	def on_submit(self):
+		if self.co_borrower:
+            # Step 1: get all approved loan applications with same co_borrower
+			applications = frappe.get_all(
+                "Loan Application",
+                filters={
+                    "co_borrower": self.co_borrower,
+                    "status": "Approved"
+                },
+                fields=["name"]
+            )
+			if applications:
+				application_names = [app.name for app in applications]
+
+                # Step 2: get all Loans linked to these applications
+				loans = frappe.get_all(
+                    "Loan",
+                    filters={
+                        "loan_application": ["in", application_names],
+                        "status": ["not in", ["Closed", "Written Offs"]]
+                    },
+                    fields=["name", "status", "applicant", "loan_application"]
+                )
+				if len(loans)>0:
+					print('if loan if ....')
+					frappe.throw(_("Selected co-borrower is already associated with active loan(s). Please select another co-borrower."))
+
+               
 
 	def validate_repayment_method(self):
 		if self.repayment_method == "Repay Over Number of Periods" and not self.repayment_periods:
@@ -307,3 +347,93 @@ def get_proposed_pledge(securities):
 	proposed_pledges["maximum_loan_amount"] = maximum_loan_amount
 
 	return proposed_pledges
+<<<<<<< Updated upstream
+=======
+
+
+
+
+
+
+import frappe
+import pandas as pd
+from datetime import datetime
+
+
+@frappe.whitelist()
+def bulk_import_loan_applications(file_url):
+    # Get File doc
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()   # full path to file in sites/private/files/ or sites/{sitename}/public/files/
+
+    # Read file with pandas
+    if file_url.endswith(".csv"):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path)
+
+    print('file_path ...', file_path, 'df ....', df)
+
+    success = []
+    errors = []
+
+    for idx, row in df.iterrows():
+        # print('row ....', row)
+        try:
+            # print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
+            # --- Get Loan Product ---
+            loan_product = frappe.get_value("Loan Product", {"rate_of_interest": row.get("ROI")}, "name")
+            if not loan_product:
+                raise Exception(f"Loan Product '{row.get('ROI')}' not found")
+
+            # --- Get Applicant ---
+            print('row.get("MEMBER NO") ...',row.get("MEMBER NO"))
+            applicant = frappe.get_value("Loan Member", {"member_id": row.get("MEMBER NO")}, "name")
+            if not applicant:
+                raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
+
+            # --- Parse Date ---
+            loan_date = row.get("LOAN SANCTION DATE/ trasancation date")
+            if isinstance(loan_date, str):
+                for fmt in ("%d-%m-%Y", "%d/%m/%Y"):
+                    try:
+                        loan_date = datetime.strptime(loan_date, fmt).date()
+                        break
+                    except:
+                        continue
+
+            print('loan_product ....',loan_product)
+
+            # Prepare data
+            loan_data = {
+                "doctype": "Loan Application",
+                "applicant_type": "Loan Member",
+                "applicant": applicant,
+                "company": "Excellminds (Demo)",
+                "loan_product": loan_product,
+                "loan_amount": row.get("LOAN AMOUNT"),
+                "is_secured_loan": 0,
+                "is_term_loan": 1,
+                "repayment_method": "Repay Over Number of Periods",
+                "repayment_periods": row.get("TERM IN MONTHS"),
+                "repayment_amount": row.get("EMI"),
+                "rate_of_interest": row.get("ROI"),
+                "posting_date": loan_date,
+				"status":"Approved"
+            }
+            # print('loan_data ...',loan_data)
+
+            loan_doc = frappe.get_doc(loan_data)
+            loan_doc.insert()
+            loan_doc.submit()
+            print('loan_doc ....',loan_doc)
+
+            success.append(loan_doc.name)
+
+        except Exception as e:
+            print('e .....',e)
+            frappe.log_error(f"Bulk Loan Import Error (Row {idx+1}): {str(e)}")
+            errors.append(f"Row {idx+1}: {str(e)}")
+
+    return f"success_count: {len(success)}, error_count: {len(errors)}"
+>>>>>>> Stashed changes
