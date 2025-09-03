@@ -21,6 +21,9 @@ from lending.loan_management.doctype.loan_repayment_schedule.loan_repayment_sche
 from lending.loan_management.doctype.loan_security_price.loan_security_price import (
 	get_loan_security_price,
 )
+import frappe
+import pandas as pd
+from datetime import datetime
 
 
 class LoanApplication(Document):
@@ -71,12 +74,6 @@ class LoanApplication(Document):
 		self.get_repayment_details()
 		self.check_sanctioned_amount_limit()
 
-	# def on_submit(self):
-	# 	print('on submit ......')
-	# 	if self.co_borrower:
-	# 		active_loans = frappe.get_value("Loan", {"co_borrower":self.co_borrower,"statue":""})
-	# 		print('.....',len(active_loans))
-    
 	def on_submit(self):
 		if self.co_borrower:
             # Step 1: get all approved loan applications with same co_borrower
@@ -347,11 +344,139 @@ def get_proposed_pledge(securities):
 
 
 
+# """
+#     Restrict query results for agents based on their assigned groups.
+#     Called automatically by Frappe when listing documents.
+# """
+# def get_permission_query_conditions(user):
+#     if not user or user == "Administrator":
+#         return None  # No restriction for admin or invalid user
+
+#     if "Agent" in frappe.get_roles(user):
+#         # Get employee ID linked to logged-in user
+#         employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+#         if not employee_id:
+#             return None  # User not mapped to any employee
+
+#         # Fetch groups assigned to this employee
+#         groups = frappe.get_all(
+#             "Loan Group Assignment",
+#             filters={"employee": employee_id},
+#             pluck="loan_group"
+#         )
+
+#         if not groups:
+#             return None  # No groups assigned → no restriction
+
+#         # Build SQL condition: allow records with applicants in user's groups
+#         groups_str = "', '".join(groups)
+#         return f"""
+#             applicant IN (
+#                 SELECT name FROM `tabLoan Member`
+#                 WHERE `group` in ('{groups_str}')
+#             )
+#         """
+
+#     return None  # Default: no restriction
+
+# """
+#     Row-level permission check.
+#     Ensures agent can only access documents belonging to their groups.
+# """
+# def has_permission(doc, user):
+#     if not user or user == "Administrator":
+#         return True  # Admin always has access
+
+#     if "Agent" in frappe.get_roles(user):
+#         # Get employee ID linked to logged-in user
+#         employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+#         # Fetch all groups assigned to this employee
+#         groups = frappe.get_all(
+#             "Loan Group Assignment",
+#             filters={"employee": employee_id},
+#             pluck="loan_group"
+#         )
+#         # Allow only if document's group is in agent's groups
+#         return doc.group in groups
+
+#     return True  # Other roles → full access
 
 
-import frappe
-import pandas as pd
-from datetime import datetime
+def get_permission_query_conditions(user):
+    if not user or user == "Administrator":
+        return None
+
+    if "Agent" in frappe.get_roles(user):
+        # Get employee ID linked to logged-in user
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return None  # No employee mapped
+
+        # Fetch groups assigned to this employee
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+        if not groups:
+            return None
+
+        groups_str = "', '".join(groups)
+
+        
+        # For Loan Repayment Schedule → restrict indirectly via Loan → Loan Member → Group
+        if frappe.form_dict.get("doctype") == "Loan Repayment Schedule":
+            return f"""
+                loan IN (
+                    SELECT name FROM `tabLoan`
+                    WHERE applicant IN (
+                        SELECT name FROM `tabLoan Member`
+                        WHERE `group` in ('{groups_str}')
+                    )
+                )
+            """
+        else:
+            return f"""
+                applicant IN (
+                    SELECT name FROM `tabLoan Member`
+                    WHERE `group` in ('{groups_str}')
+                )
+            """
+
+    return None
+
+
+def has_permission(doc, user):
+    if not user or user == "Administrator":
+        return True
+
+    if "Agent" in frappe.get_roles(user):
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return False
+
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+        if not groups:
+            return False
+            
+
+        # Case 2: Loan Repayment Schedule → check group via linked Loan
+        if doc.doctype == "Loan Repayment Schedule":
+            loan_member_group = frappe.db.get_value(
+                "Loan Member",
+                {"name": frappe.db.get_value("Loan", doc.loan, "applicant")},
+                "group"
+            )
+            return loan_member_group in groups
+        else:
+            return doc.group in groups
+
+    return True
+
 
 
 @frappe.whitelist()

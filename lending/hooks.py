@@ -89,6 +89,17 @@ app_include_js = "lending.bundle.js"
 
 # Installation
 # ------------
+permission_query_conditions = {
+    "Loan Application": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+    "Loan": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+    "Loan Disbursement": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+    "Loan Repayment Schedule": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+	"Loan Repayment": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+    "Loan Demand": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+    "Loan Interest Accrual": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+
+}
+
 
 # before_install = "lending.install.before_install"
 after_install = "lending.install.after_install"
