@@ -16,7 +16,6 @@
   "loan_product",
   "column_break_3",
   "company",
-  "posting_date",
   "value_date",
   "loan_restructure",
   "clearance_date",
@@ -86,14 +85,6 @@
    "options": "Loan",
    "reqd": 1,
    "search_index": 1
-  },
-  {
-   "default": "Now",
-   "fieldname": "posting_date",
-   "fieldtype": "Datetime",
-   "in_list_view": 1,
-   "label": "Posting Date",
-   "reqd": 1
   },
   {
    "fieldname": "payment_details_section",
@@ -544,12 +535,19 @@
    "fieldtype": "Data",
    "label": "Created By",
    "read_only": 1
+  },
+  {
+   "fieldname": "value_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-02 10:40:02.308484",
+ "modified": "2025-09-04 12:08:07.620043",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Repayment",
@@ -605,7 +603,6 @@
    "share": 1
   }
  ],
- "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

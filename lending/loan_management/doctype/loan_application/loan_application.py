@@ -403,6 +403,7 @@ def get_proposed_pledge(securities):
 
 
 def get_permission_query_conditions(user):
+    print('user .....',user)
     if not user or user == "Administrator":
         return None
 
@@ -419,9 +420,13 @@ def get_permission_query_conditions(user):
             pluck="loan_group"
         )
         if not groups:
-            return None
+            return "1=2"
 
         groups_str = "', '".join(groups)
+
+        if frappe.form_dict.get("doctype") == "Collection In Hand":
+			# Filter only records where employee matches logged-in user's employee
+            return f"`tabCollection In Hand`.`employee` = '{employee_id}'"
 
         
         # For Loan Repayment Schedule → restrict indirectly via Loan → Loan Member → Group
@@ -454,6 +459,10 @@ def has_permission(doc, user):
         employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
         if not employee_id:
             return False
+		
+        if frappe.form_dict.get("doctype") == "Collection In Hand":
+			# Filter only records where employee matches logged-in user's employee
+            return doc.employee == employee_id
 
         groups = frappe.get_all(
             "Loan Group Assignment",

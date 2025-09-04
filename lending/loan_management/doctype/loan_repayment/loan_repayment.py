@@ -81,7 +81,6 @@ class LoanRepayment(AccountsController):
 		penalty_amount: DF.Currency
 		penalty_income_account: DF.Link | None
 		pending_principal_amount: DF.Currency
-		posting_date: DF.Datetime
 		prepayment_charges: DF.Table[PrepaymentCharges]
 		principal_amount_paid: DF.Currency
 		rate_of_interest: DF.Percent
@@ -190,18 +189,22 @@ class LoanRepayment(AccountsController):
 
 		# Ensure amount field exists in Loan Repayment
 		if self.amount_paid:
+			if self.mode_of_payment == "Cash":
+				# check if logged-in user has Agent or Employee role
+				roles = frappe.get_roles(frappe.session.user)
+				if "Agent" in roles or "Employee" in roles:
 			
-			# Create new record in Collection In Hand
-			collection = frappe.get_doc({
-				"doctype": "Collection In Hand",
-				"loan_repayment": self.name,     # Link back to repayment
-				"amount": self.amount_paid,      # Current repayment
-				"posting_date": frappe.utils.nowdate(),
-				"employee": self.created_by,
-				"loan": self.against_loan,
-				"applicant":self.applicant,
-			})
-			collection.insert(ignore_permissions=True)
+					# Create new record in Collection In Hand
+					collection = frappe.get_doc({
+						"doctype": "Collection In Hand",
+						"loan_repayment": self.name,     # Link back to repayment
+						"amount": self.amount_paid,      # Current repayment
+						"posting_date": frappe.utils.nowdate(),
+						"employee": self.created_by,
+						"loan": self.against_loan,
+						"applicant":self.applicant,
+					})
+					collection.insert(ignore_permissions=True)
 
 		if self.is_backdated:
 			if frappe.flags.in_test:
@@ -3110,21 +3113,88 @@ def get_net_paid_amount(loan):
 	return frappe.db.get_value("Loan", {"name": loan}, "sum(total_amount_paid - refund_amount)")
 
 
-@frappe.whitelist(methods=["POST"])
+# @frappe.whitelist(methods=["POST"])
+# def post_bulk_payments(data):
+# 	# sort data by loan and value date
+# 	data = sorted(data, key=lambda x: (x["against_loan"], x["value_date"]))
+
+# 	grouped_by_loan = group_by_loan(data)
+
+# 	# custom hash best
+# 	trace_id = random_string(10)
+
+# 	if frappe.flags.in_test:
+# 		bulk_repost(grouped_by_loan, trace_id)
+# 	else:
+# 		job = frappe.enqueue(bulk_repost, grouped_by_loan=grouped_by_loan, trace_id=trace_id)
+# 		return {"job_id": job.id, "trace_id": trace_id}
+
+
 def post_bulk_payments(data):
-	# sort data by loan and value date
-	data = sorted(data, key=lambda x: (x["against_loan"], x["value_date"]))
+    from lending.loan_management.doctype.loan_demand.loan_demand import reverse_demands
+    from lending.loan_management.doctype.loan_interest_accrual.loan_interest_accrual import (
+        reverse_loan_interest_accruals,
+    )
+    from lending.loan_management.doctype.process_loan_classification.process_loan_classification import (
+        create_process_loan_classification,
+    )
+    from lending.loan_management.doctype.process_loan_demand.process_loan_demand import (
+        process_daily_loan_demands,
+    )
+    from lending.loan_management.doctype.process_loan_interest_accrual.process_loan_interest_accrual import (
+        process_loan_interest_accrual_for_loans,
+    )
 
-	grouped_by_loan = group_by_loan(data)
+    # sort data by posting date
+    data = sorted(data, key=lambda x: x["posting_date"])
 
-	# custom hash best
-	trace_id = random_string(10)
+    grouped_data = group_by_loan_and_disbursement(data)
+    for key, rows in grouped_data.items():
+        from_date = getdate(rows[0]["posting_date"])
+        to_date = getdate(rows[-1]["posting_date"])
+        loan = key[0]
+        loan_disbursement = key[1]
 
-	if frappe.flags.in_test:
-		bulk_repost(grouped_by_loan, trace_id)
-	else:
-		job = frappe.enqueue(bulk_repost, grouped_by_loan=grouped_by_loan, trace_id=trace_id)
-		return {"job_id": job.id, "trace_id": trace_id}
+        reversed_accruals = reverse_loan_interest_accruals(
+            loan, from_date, interest_type="Normal Interest", loan_disbursement=loan_disbursement
+        )
+
+        reverse_demands(loan, from_date, demand_type="EMI", loan_disbursement=loan_disbursement)
+
+        for payment in rows:
+            loan_repayment = frappe.get_doc(payment)
+            loan_repayment.flags.in_bulk = True
+            loan_repayment.submit()
+
+            frappe.get_doc(
+                {
+                    "doctype": "Process Loan Interest Accrual",
+                    "loan": loan,
+                    "posting_date": getdate(payment.get("posting_date")),
+                }
+            ).submit()
+
+            frappe.get_doc(
+                {
+                    "doctype": "Process Loan Demand",
+                    "loan": loan,
+                    "posting_date": getdate(payment.get("posting_date")),
+                }
+            ).submit()
+
+            loan_repayment.flags.in_bulk = False
+
+        create_process_loan_classification(
+            posting_date=to_date, loan=loan, loan_disbursement=loan_disbursement
+        )
+
+        if reversed_accruals:
+            dates = [getdate(d.get("posting_date")) for d in reversed_accruals]
+            max_date = max(dates)
+            if getdate(max_date) > getdate(to_date):
+                process_loan_interest_accrual_for_loans(posting_date=max_date, loan=loan)
+                process_daily_loan_demands(posting_date=add_days(max_date, 1), loan=loan)
+
 
 
 def group_by_loan(data):

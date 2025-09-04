@@ -97,6 +97,7 @@ permission_query_conditions = {
 	"Loan Repayment": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
     "Loan Demand": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
     "Loan Interest Accrual": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
+    "Collection In Hand": "lending.loan_management.doctype.loan_application.loan_application.get_permission_query_conditions",
 
 }
 
