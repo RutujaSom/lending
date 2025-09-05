@@ -610,7 +610,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-09-04 16:02:31.762482",
+ "modified": "2025-09-05 17:06:28.195088",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Lending",
@@ -623,6 +623,12 @@
  "roles": [
   {
    "role": "Administrator"
+  },
+  {
+   "role": "Loan Manager"
+  },
+  {
+   "role": "Accounts Manager"
   }
  ],
  "sequence_id": 1.0,

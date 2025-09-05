@@ -130,7 +130,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-09-04 18:21:51.432101",
+ "modified": "2025-09-05 17:05:59.036677",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Lending-Agent",
@@ -142,9 +142,6 @@
  "roles": [
   {
    "role": "Agent"
-  },
-  {
-   "role": "Employee"
   }
  ],
  "sequence_id": 2.0,
