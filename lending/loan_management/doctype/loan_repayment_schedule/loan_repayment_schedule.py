@@ -39,13 +39,8 @@ class LoanRepaymentSchedule(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from lending.loan_management.doctype.co_lender_schedule.co_lender_schedule import (
-			CoLenderSchedule,
-		)
-		from lending.loan_management.doctype.repayment_schedule.repayment_schedule import (
-			RepaymentSchedule,
-		)
+		from lending.loan_management.doctype.co_lender_schedule.co_lender_schedule import CoLenderSchedule
+		from lending.loan_management.doctype.repayment_schedule.repayment_schedule import RepaymentSchedule
 
 		adjusted_interest: DF.Currency
 		amended_from: DF.Link | None
@@ -74,26 +69,15 @@ class LoanRepaymentSchedule(Document):
 		posting_date: DF.Datetime | None
 		rate_of_interest: DF.Float
 		repayment_date_on: DF.Literal["Start of the next month", "End of the current month"]
-		repayment_frequency: DF.Literal[
-			"Monthly", "Daily", "Weekly", "Bi-Weekly", "Quarterly", "One Time"
-		]
+		repayment_days: DF.Int
+		repayment_frequency: DF.Literal["Monthly", "Daily", "Weekly", "Bi-Weekly", "Quarterly", "One Time", "Custom"]
 		repayment_method: DF.Literal["", "Repay Fixed Amount per Period", "Repay Over Number of Periods"]
 		repayment_periods: DF.Int
 		repayment_schedule: DF.Table[RepaymentSchedule]
 		repayment_schedule_type: DF.Data | None
 		repayment_start_date: DF.Date | None
 		restructure_type: DF.Literal["", "Normal Restructure", "Advance Payment", "Pre Payment"]
-		status: DF.Literal[
-			"Initiated",
-			"Rejected",
-			"Active",
-			"Restructured",
-			"Rescheduled",
-			"Outdated",
-			"Draft",
-			"Cancelled",
-			"Closed",
-		]
+		status: DF.Literal["Initiated", "Rejected", "Active", "Restructured", "Rescheduled", "Outdated", "Draft", "Cancelled", "Closed"]
 		total_installments_overdue: DF.Int
 		total_installments_paid: DF.Int
 		total_installments_raised: DF.Int

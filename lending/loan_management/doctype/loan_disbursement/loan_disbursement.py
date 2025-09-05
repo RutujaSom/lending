@@ -49,10 +49,7 @@ class LoanDisbursement(AccountsController):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from lending.loan_management.doctype.loan_disbursement_charge.loan_disbursement_charge import (
-			LoanDisbursementCharge,
-		)
+		from lending.loan_management.doctype.loan_disbursement_charge.loan_disbursement_charge import LoanDisbursementCharge
 
 		against_loan: DF.Link
 		amended_from: DF.Link | None
@@ -83,9 +80,8 @@ class LoanDisbursement(AccountsController):
 		reference_date: DF.Date | None
 		reference_number: DF.Data | None
 		refund_account: DF.Link | None
-		repayment_frequency: DF.Literal[
-			"Monthly", "Daily", "Weekly", "Bi-Weekly", "Quarterly", "One Time"
-		]
+		repayment_days: DF.Int
+		repayment_frequency: DF.Literal["Monthly", "Daily", "Weekly", "Bi-Weekly", "Quarterly", "One Time", "Custom"]
 		repayment_method: DF.Literal["", "Repay Over Number of Periods", "Repay Fixed Amount per Period"]
 		repayment_schedule_type: DF.Data | None
 		repayment_start_date: DF.Date | None

@@ -46,6 +46,7 @@
   "moratorium_tenure",
   "repayment_frequency",
   "treatment_of_interest",
+  "repayment_days",
   "loan_credit_limits_section",
   "limit_applicable_start",
   "maximum_limit_amount",
@@ -508,7 +509,7 @@
    "fieldname": "repayment_frequency",
    "fieldtype": "Select",
    "label": "Repayment Frequency",
-   "options": "Monthly\nDaily\nWeekly\nBi-Weekly\nQuarterly\nOne Time"
+   "options": "Monthly\nDaily\nWeekly\nBi-Weekly\nQuarterly\nOne Time\nCustom"
   },
   {
    "depends_on": "eval:doc.applicant_type==\"Customer\"",
@@ -707,12 +708,33 @@
   {
    "fieldname": "column_break_qsfx",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "loan_id",
+   "fieldtype": "Data",
+   "label": "Loan Id",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "loan_application.co_borrower",
+   "fieldname": "co_borrower",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "label": "Co-Borrower",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.is_term_loan && doc.repayment_frequency == \"Custom\"",
+   "fieldname": "repayment_days",
+   "fieldtype": "Int",
+   "label": "Repayment Days"
   }
  ],
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-08-25 12:29:18.178732",
+ "modified": "2025-09-05 11:59:45.140167",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan",
@@ -737,6 +759,39 @@
   {
    "read": 1,
    "role": "Employee"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Agent",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
   }
  ],
  "search_fields": "posting_date",

@@ -41,10 +41,7 @@ class Loan(AccountsController):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from lending.loan_management.doctype.loan_disbursement_charge.loan_disbursement_charge import (
-			LoanDisbursementCharge,
-		)
+		from lending.loan_management.doctype.loan_disbursement_charge.loan_disbursement_charge import LoanDisbursementCharge
 
 		amended_from: DF.Link | None
 		applicant: DF.Link
@@ -96,25 +93,14 @@ class Loan(AccountsController):
 		posting_date: DF.Date
 		rate_of_interest: DF.Percent
 		refund_amount: DF.Currency
-		repayment_frequency: DF.Literal[
-			"Monthly", "Daily", "Weekly", "Bi-Weekly", "Quarterly", "One Time"
-		]
+		repayment_days: DF.Int
+		repayment_frequency: DF.Literal["Monthly", "Daily", "Weekly", "Bi-Weekly", "Quarterly", "One Time", "Custom"]
 		repayment_method: DF.Literal["", "Repay Fixed Amount per Period", "Repay Over Number of Periods"]
 		repayment_periods: DF.Int
 		repayment_schedule_type: DF.Data | None
 		repayment_start_date: DF.Date | None
 		settlement_date: DF.Date | None
-		status: DF.Literal[
-			"Draft",
-			"Sanctioned",
-			"Partially Disbursed",
-			"Disbursed",
-			"Active",
-			"Loan Closure Requested",
-			"Closed",
-			"Written Off",
-			"Settled",
-		]
+		status: DF.Literal["Draft", "Sanctioned", "Partially Disbursed", "Disbursed", "Active", "Loan Closure Requested", "Closed", "Written Off", "Settled"]
 		tenure_post_restructure: DF.Int
 		total_amount_paid: DF.Currency
 		total_interest_payable: DF.Currency

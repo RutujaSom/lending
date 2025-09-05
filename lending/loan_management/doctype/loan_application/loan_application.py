@@ -34,7 +34,6 @@ class LoanApplication(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from lending.loan_management.doctype.proposed_pledge.proposed_pledge import ProposedPledge
 
 		amended_from: DF.Link | None
@@ -342,64 +341,6 @@ def get_proposed_pledge(securities):
 	return proposed_pledges
 
 
-
-
-# """
-#     Restrict query results for agents based on their assigned groups.
-#     Called automatically by Frappe when listing documents.
-# """
-# def get_permission_query_conditions(user):
-#     if not user or user == "Administrator":
-#         return None  # No restriction for admin or invalid user
-
-#     if "Agent" in frappe.get_roles(user):
-#         # Get employee ID linked to logged-in user
-#         employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
-#         if not employee_id:
-#             return None  # User not mapped to any employee
-
-#         # Fetch groups assigned to this employee
-#         groups = frappe.get_all(
-#             "Loan Group Assignment",
-#             filters={"employee": employee_id},
-#             pluck="loan_group"
-#         )
-
-#         if not groups:
-#             return None  # No groups assigned → no restriction
-
-#         # Build SQL condition: allow records with applicants in user's groups
-#         groups_str = "', '".join(groups)
-#         return f"""
-#             applicant IN (
-#                 SELECT name FROM `tabLoan Member`
-#                 WHERE `group` in ('{groups_str}')
-#             )
-#         """
-
-#     return None  # Default: no restriction
-
-# """
-#     Row-level permission check.
-#     Ensures agent can only access documents belonging to their groups.
-# """
-# def has_permission(doc, user):
-#     if not user or user == "Administrator":
-#         return True  # Admin always has access
-
-#     if "Agent" in frappe.get_roles(user):
-#         # Get employee ID linked to logged-in user
-#         employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
-#         # Fetch all groups assigned to this employee
-#         groups = frappe.get_all(
-#             "Loan Group Assignment",
-#             filters={"employee": employee_id},
-#             pluck="loan_group"
-#         )
-#         # Allow only if document's group is in agent's groups
-#         return doc.group in groups
-
-#     return True  # Other roles → full access
 
 
 def get_permission_query_conditions(user):

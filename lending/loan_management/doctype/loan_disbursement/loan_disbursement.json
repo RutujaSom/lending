@@ -24,6 +24,7 @@
   "repayment_start_date",
   "is_term_loan",
   "withhold_security_deposit",
+  "repayment_days",
   "section_break_7",
   "disbursement_date",
   "clearance_date",
@@ -258,7 +259,7 @@
    "fieldname": "repayment_frequency",
    "fieldtype": "Select",
    "label": "Repayment Frequency",
-   "options": "Monthly\nDaily\nWeekly\nBi-Weekly\nQuarterly\nOne Time"
+   "options": "Monthly\nDaily\nWeekly\nBi-Weekly\nQuarterly\nOne Time\nCustom"
   },
   {
    "fetch_from": "against_loan.repayment_schedule_type",
@@ -377,12 +378,19 @@
    "fieldtype": "Link",
    "label": "Mode Of Payment",
    "options": "Mode of Payment"
+  },
+  {
+   "depends_on": "eval: doc.is_term_loan && doc.repayment_frequency == \"Custom\"",
+   "fieldname": "repayment_days",
+   "fieldtype": "Int",
+   "label": "Repayment Days"
   }
  ],
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-08-25 12:30:26.884933",
+ "modified": "2025-09-05 11:59:07.006232",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Disbursement",
@@ -418,9 +426,29 @@
    "share": 1,
    "submit": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Agent",
+   "share": 1
   }
  ],
- "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

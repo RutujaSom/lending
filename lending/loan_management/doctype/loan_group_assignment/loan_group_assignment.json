@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "LM-LGA-.YYYY.-.#####",
  "creation": "2025-08-26 15:52:24.561126",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -41,12 +42,14 @@
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-30 18:57:03.474252",
+ "modified": "2025-09-04 16:18:46.411100",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Group Assignment",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
