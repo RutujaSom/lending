@@ -24,6 +24,7 @@ from lending.loan_management.doctype.loan_security_price.loan_security_price imp
 import frappe
 import pandas as pd
 from datetime import datetime
+from ex_loan_management.api.utils import get_paginated_data
 
 
 class LoanApplication(Document):
@@ -505,3 +506,208 @@ def bulk_import_loan_applications(file_url):
             errors.append(f"Row {idx+1}: {str(e)}")
 
     return f"success_count: {len(success)}, error_count: {len(errors)}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import frappe
+
+@frappe.whitelist()
+def create_loan_application():
+    try:
+        data = frappe.form_dict  # works for JSON body and form-data
+        user_doc = frappe.get_doc("User", frappe.session.user)
+        print('user_doc ......',user_doc)
+        try:
+            emp_details = frappe.get_doc("Employee", {"user_id": user_doc.name})
+            company = emp_details.company
+        except:
+            company = ""
+
+        # Step 1: Prepare Loan Application doc
+        doc = frappe.get_doc({
+            "doctype": "Loan Application",
+            "applicant_type": data.get("applicant_type", "Loan Member"),
+            "applicant": data.get("applicant"),
+            "applicant_name": data.get("applicant_name"),
+            "co_borrower": data.get("co_borrower"),
+            "company": company,
+            "loan_product": data.get("loan_product"),
+            "loan_amount": data.get("loan_amount"),
+            "is_term_loan": data.get("is_term_loan") or 0,
+            "rate_of_interest": data.get("rate_of_interest"),
+            "description": data.get("description"),
+            "repayment_method": "Repay Over Number of Periods",
+            "repayment_periods": data.get("repayment_periods"),
+            "status": "Open",
+        })
+
+        
+        # Step 3: Insert Loan Application (runs validate() automatically)
+        doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "name": doc.name,
+            "loan_application": doc.as_dict()
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Loan Application API Error")
+        return {"status": "error", "message": str(e)}
+
+
+
+
+from frappe.model.workflow import apply_workflow
+
+@frappe.whitelist()
+def send_for_verification(application_name):
+    """
+    Trigger workflow action 'Submit for verification'
+    """
+    try:
+        # Load the Loan Application
+        doc = frappe.get_doc("Loan Application", application_name)
+
+        # Apply workflow transition
+        new_doc = apply_workflow(doc, "Submit for verification")
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": f"Loan Application {application_name} submitted for verification",
+            "loan_application": new_doc.as_dict()
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Send for Verification API Error")
+        return {"status": "error", "message": str(e)}
+
+
+
+
+
+
+
+update_fields = [
+    "name",
+    "applicant_type",
+	"applicant",
+	"applicant_name",
+	"co_borrower",
+	"company",
+	"posting_date",
+	"status",
+	"loan_product",
+	"is_term_loan",
+	"loan_amount",
+	"rate_of_interest",
+	"description",
+	"maximum_loan_amount",
+	"repayment_method",
+	"total_payable_amount",
+	"repayment_periods",
+	"repayment_amount",
+	"total_payable_interest",
+	"amended_from"
+]
+
+"""
+	Get Loan Application List (with optional pagination, search & sorting)
+"""
+@frappe.whitelist()
+def loan_application_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False, loan_group=None, **kwargs):
+    is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into bool
+    extra_params = {"search": search} if search else {}
+    if "cmd" in kwargs:
+        del kwargs["cmd"]
+
+    # 🔹 Collect filters from kwargs (all query params except the defaults)
+    filters = {}
+    for k, v in kwargs.items():
+        if v not in [None, ""]:   # skip empty params
+            filters[k] = v
+
+    # 🔹 Handle loan_group filter (from Loan Member)
+    user = frappe.session.user
+
+    if "Agent" in frappe.get_roles(user):
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return None  # No employee mapped
+
+        # Fetch loan groups assigned to this employee
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # 🔹 If agent selects a group → filter only that group
+        if loan_group:
+            groups = [loan_group] if loan_group in groups else []
+
+        # If no valid group remains → no records
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # Fetch Loan Members belonging to allowed groups
+        member_ids = frappe.get_all(
+            "Loan Member",
+            filters={"group": ["in", groups]},
+            pluck="name"
+        )
+
+        if member_ids:
+            filters["applicant"] = ["in", member_ids]
+        else:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+    base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
+
+    return get_paginated_data(
+        doctype="Loan Application",
+        fields=update_fields,
+        filters=filters,   # ✅ Now includes applicant filter if loan_group provided
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=int(page),
+        page_size=int(page_size),
+        search_fields=["applicant_name"],
+        is_pagination=is_pagination,
+        base_url=base_url,
+        extra_params=extra_params,
+        # link_fields={"applicant": "member_name"},  # 👈 you can also expand Loan Member fields if needed
+    )
+

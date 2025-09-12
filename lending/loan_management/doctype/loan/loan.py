@@ -30,7 +30,7 @@ from lending.loan_management.doctype.loan_security_release.loan_security_release
 	get_pledged_security_qty,
 )
 from lending.utils import daterange
-
+from ex_loan_management.api.utils import get_paginated_data
 
 # nosemgrep
 class Loan(AccountsController):
@@ -1884,3 +1884,151 @@ def bulk_import_loans(file_url):
             errors.append(f"Row {idx+1}: {str(e)}")
 
     return f"success_count: {len(success)}, error_count: {len(errors)}"
+
+
+
+
+
+
+update_fields = [
+    "name",
+    "loan_id",
+	"applicant_type",
+	"applicant",
+	"applicant_name",
+	"loan_application",
+	"co_borrower",
+	"company",
+	"posting_date",
+	"status",
+	"loan_product",
+	"loan_amount",
+	"loan_partner",
+	"loan_category",
+	"repayment_schedule_type",
+	"cancellation_date",
+	"settlement_date",
+	"rate_of_interest",
+	"penalty_charges_rate",
+	"disbursement_date",
+	"disbursed_amount",
+	"closure_date",
+	"maximum_loan_amount",
+	"is_secured_loan",
+	"is_term_loan",
+	"repayment_start_date",
+	"repayment_method",
+	"repayment_periods",
+	"monthly_repayment_amount",
+	"moratorium_type",
+	"moratorium_tenure",
+	"repayment_frequency",
+	"treatment_of_interest",
+	"repayment_days",
+	"limit_applicable_start",
+	"maximum_limit_amount",
+	"limit_applicable_end",
+	"utilized_limit_amount",
+	"available_limit_amount",
+	"days_past_due",
+	"loan_restructure_count",
+	"watch_period_end_date",
+	"tenure_post_restructure",
+	"cost_center",
+	"disbursement_account",
+	"payment_account",
+	"loan_account",
+	"interest_income_account",
+	"penalty_income_account",
+	"total_payment",
+	"total_interest_payable",
+	"total_principal_paid",
+	"total_amount_paid",
+]
+
+"""
+	Get Loan Application List (with optional pagination, search & sorting)
+"""
+@frappe.whitelist()
+def loan_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False, loan_group=None, **kwargs):
+    is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into bool
+    extra_params = {"search": search} if search else {}
+    if "cmd" in kwargs:
+        del kwargs["cmd"]
+
+    # 🔹 Collect filters from kwargs (all query params except the defaults)
+    filters = {}
+    for k, v in kwargs.items():
+        if v not in [None, ""]:   # skip empty params
+            filters[k] = v
+
+    # 🔹 Handle loan_group filter (from Loan Member)
+    user = frappe.session.user
+
+    if "Agent" in frappe.get_roles(user):
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return None  # No employee mapped
+
+        # Fetch loan groups assigned to this employee
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # 🔹 If agent selects a group → filter only that group
+        if loan_group:
+            groups = [loan_group] if loan_group in groups else []
+
+        # If no valid group remains → no records
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # Fetch Loan Members belonging to allowed groups
+        member_ids = frappe.get_all(
+            "Loan Member",
+            filters={"group": ["in", groups]},
+            pluck="name"
+        )
+
+        if member_ids:
+            filters["applicant"] = ["in", member_ids]
+        else:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+    base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
+
+    return get_paginated_data(
+        doctype="Loan",
+        fields=update_fields,
+        filters=filters,   # ✅ Now includes applicant filter if loan_group provided
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=int(page),
+        page_size=int(page_size),
+        search_fields=["applicant_name"],
+        is_pagination=is_pagination,
+        base_url=base_url,
+        extra_params=extra_params,
+        # link_fields={"applicant": "member_name"},  # 👈 you can also expand Loan Member fields if needed
+    )
+

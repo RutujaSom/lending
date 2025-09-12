@@ -31,6 +31,7 @@ from frappe.query_builder import DocType
 from pypika.functions import Max
 from pypika.functions import Sum
 from frappe.utils import flt
+from ex_loan_management.api.utils import get_paginated_data
 
 class LoanRepayment(AccountsController):
 	# begin: auto-generated types
@@ -3380,5 +3381,193 @@ def bulk_import_loan_repayments(file_url):
         return {"error": str(e)}
 
 
+
+
+
+
+
+
+
+update_fields = [
+    "name",
+	"against_loan",
+	"applicant",
+	"repayment_type",
+	"loan_disbursement",
+	"loan_adjustment",
+	"repayment_schedule_type",
+	"loan_product",
+	"company",
+	"value_date",
+	"loan_restructure",
+	"clearance_date",
+	"rate_of_interest",
+	"days_past_due",
+	"mode_of_payment",
+	"is_term_loan",
+	"created_by",
+	"due_date",
+	"pending_principal_amount",
+	"interest_payable",
+	"payable_amount",
+	"total_charges_payable",
+	"payable_principal_amount",
+	"penalty_amount",
+	"amount_paid",
+	"reference_number",
+	"total_interest_paid",
+	"total_penalty_paid",
+	"reference_date",
+	"principal_amount_paid",
+	"total_charges_paid",
+	"excess_amount",
+	"manual_remarks",
+	"payment_account",
+]
+
+"""
+	Get Loan Repayment List (with optional pagination, search & sorting)
+"""
+@frappe.whitelist()
+def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False, loan_group=None, **kwargs):
+    is_pagination = frappe.utils.sbool(is_pagination)
+    extra_params = {"search": search} if search else {}
+    if "cmd" in kwargs:
+        del kwargs["cmd"]
+
+    filters = {}
+    for k, v in kwargs.items():
+        if v not in [None, ""]:
+            filters[k] = v
+
+    user = frappe.session.user
+
+    # 🔹 Check if user is an Agent
+    if "Agent" in frappe.get_roles(user):
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return None  # No employee mapped
+
+        # Fetch loan groups assigned to this employee
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # 🔹 If agent selects a group → filter only that group
+        if loan_group:
+            groups = [loan_group] if loan_group in groups else []
+
+        # If no valid group remains → no records
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # Fetch Loan Members belonging to allowed groups
+        member_ids = frappe.get_all(
+            "Loan Member",
+            filters={"group": ["in", groups]},
+            pluck="name"
+        )
+
+        if member_ids:
+            filters["applicant"] = ["in", member_ids]
+        else:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+    # 🔹 For non-Agents → no restriction
+    base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
+
+    return get_paginated_data(
+        doctype="Loan Repayment",
+        fields=update_fields,
+        filters=filters,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=int(page),
+        page_size=int(page_size),
+        search_fields=["applicant_name"],
+        is_pagination=is_pagination,
+        base_url=base_url,
+        extra_params=extra_params,
+        link_fields={"applicant": "member_name"},
+    )
+
+
+
+
+
+
+
+
+import frappe
+
+@frappe.whitelist()
+def create_loan_repayment():
+    try:
+        data = frappe.form_dict  # works for JSON body and form-data
+        user_doc = frappe.get_doc("User", frappe.session.user)
+        print('user_doc ......',user_doc)
+        try:
+            emp_details = frappe.get_doc("Employee", {"user_id": user_doc.name})
+            company = emp_details.company
+        except:
+            company = ""
+
+        # Step 1: Prepare Loan Application doc
+        doc = frappe.get_doc({
+            "doctype": "Loan Repayment",
+            "against_loan": data.get("against_loan"),
+            "applicant": data.get("applicant"),
+            "repayment_type": "Normal Repayment",
+            "loan_disbursement": data.get("loan_disbursement"),
+			"loan_adjustment":data.get("loan_adjustment"),
+            "company": company,
+            "loan_product": data.get("loan_product"),
+            "value_date": data.get("value_date"),
+            "amount_paid": data.get("amount_paid"),
+			"mode_of_payment":data.get("mode_of_payment"),
+            "reference_number": data.get("reference_number"),
+            "manual_remarks": data.get("manual_remarks"),
+            "reference_date": data.get("reference_date"),
+            "status": "Open",
+			"repayment_schedule_type":"Monthly as per repayment start date"
+        })
+
+        
+        # Step 3: Insert Loan Application (runs validate() automatically)
+        doc.insert(ignore_permissions=True)
+        doc.submit()
+        frappe.db.commit()
+
+
+        return {
+            "status": "success",
+            "name": doc.name,
+            "loan_repayment": doc.as_dict()
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Loan Repayment API Error")
+        return {"status": "error", "message": str(e)}
 
 

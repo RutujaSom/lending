@@ -5,7 +5,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-
+from ex_loan_management.api.utils import get_paginated_data
 
 class LoanProduct(Document):
 	# begin: auto-generated types
@@ -136,3 +136,52 @@ def get_default_charge_accounts(charge_type, company):
 	}
 
 	return out
+
+
+
+
+
+
+
+update_fields = [
+	"name",
+    "product_code",
+	"product_name",
+	"rate_of_interest",
+	"loan_category",
+	"maximum_loan_amount",
+    "company",
+	"cyclic_day_of_the_month",
+	"repayment_date_on",
+	"repayment_schedule_type",
+	"is_term_loan",
+	"validate_normal_repayment",
+	"min_days_bw_disbursement_first_repayment",
+	"excess_amount_acceptance_limit",
+]
+
+"""
+	Get Loan Product List (with optional pagination, search & sorting)
+"""
+@frappe.whitelist()
+def loan_product_list(page=1, page_size=10, search=None, sort_by="product_name", sort_order="asc", is_pagination=False):
+    is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into int
+    extra_params = {"search": search} if search else {}
+    base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
+
+    return get_paginated_data(
+        doctype="Loan Product",
+        fields=update_fields,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=int(page),
+        page_size=int(page_size),
+        search_fields=["product_code","product_name"],
+        is_pagination=is_pagination,
+        base_url=base_url,
+        extra_params=extra_params,
+	)
+
+
+

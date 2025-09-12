@@ -27,9 +27,10 @@ class LoanGroupAssignment(Document):
 
 	def validate_group_assignment(self):
 		# Get existing active assignments for the same loan group
+		print('self.loan_group .....',self.loan_group)
 		existing_assignments = frappe.get_all(
 			"Loan Group Assignment",
-			filters={"loan_group": self.loan_group, "name": ["!=", self.name]},
+			filters={"loan_group": self.loan_group,  "employee": self.employee, "name": ["!=", self.name]},
 			fields=["employee", "start_date", "end_date"]
 		)
 

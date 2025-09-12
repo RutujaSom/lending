@@ -64,35 +64,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Loan Collection",
-   "link_count": 2,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Loan Group Assignment",
-   "link_count": 0,
-   "link_to": "Loan Group Assignment",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Collection In Hand",
-   "link_count": 0,
-   "link_to": "Collection In Hand",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Disbursement and Repayment",
    "link_count": 3,
    "link_type": "DocType",
@@ -128,9 +99,48 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Collection",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan Group Assignment",
+   "link_count": 0,
+   "link_to": "Loan Group Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Collection In Hand",
+   "link_count": 0,
+   "link_to": "Collection In Hand",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loan EMI's",
+   "link_count": 0,
+   "link_to": "loan-emi",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-09-05 17:05:59.036677",
+ "modified": "2025-09-11 17:45:51.821449",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Lending-Agent",

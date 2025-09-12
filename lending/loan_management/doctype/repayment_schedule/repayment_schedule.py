@@ -158,7 +158,8 @@ def get_todays_emis(
     sort_by="rs.payment_date", 
     sort_order="ASC", 
     employee=None,
-    loan_group=None
+    loan_group=None,
+    is_pagination=False
 ):
     print('employee .....',employee)
     if not selected_date:
