@@ -219,13 +219,16 @@ frappe.ui.form.on("Loan Application", {
                             }
                         };
                     });
+					frm.set_query("nominee", function(){
+						return {
+                            filters: {
+                                group: r.group,
+                                name: ["!=", frm.doc.loan_member]  // prevent self-selection
+                            }
+                        };
+					})
                 }
 				
-            });
-			frappe.db.get_value("Loan Member", frm.doc.applicant, "nominee", function(value) {
-                if (value && value.nominee) {
-                    frm.set_value("co_borrower", value.nominee);
-                }
             });
         }
     },

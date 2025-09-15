@@ -14,6 +14,10 @@
   "company",
   "posting_date",
   "status",
+  "nominee_details",
+  "nominee",
+  "column_break_rmfq",
+  "nominee_relation",
   "section_break_4",
   "loan_product",
   "is_term_loan",
@@ -218,12 +222,38 @@
    "fieldtype": "Link",
    "label": "Co-Borrower",
    "options": "Loan Member"
+  },
+  {
+   "fieldname": "nominee_details",
+   "fieldtype": "Section Break",
+   "label": "Nominee Details"
+  },
+  {
+   "depends_on": "applicant",
+   "fieldname": "nominee",
+   "fieldtype": "Link",
+   "label": "Nominee",
+   "options": "Loan Member",
+   "reqd": 1
+  },
+  {
+   "default": "Spouse",
+   "depends_on": "applicant",
+   "fieldname": "nominee_relation",
+   "fieldtype": "Select",
+   "label": "Nominee Relation",
+   "options": "Spouse\nMother\nFather\nSon\nDaughter\nSister\nBrother\nHusband\nWife",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_rmfq",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-04 18:42:00.534456",
+ "modified": "2025-09-12 18:40:52.058309",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Application",
@@ -316,6 +346,7 @@
    "report": 1,
    "role": "Administrator",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {

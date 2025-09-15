@@ -28,56 +28,65 @@ from ex_loan_management.api.utils import get_paginated_data
 
 
 class LoanApplication(Document):
-	# begin: auto-generated types
-	# This code is auto-generated. Do not modify anything in this block.
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
+    from typing import TYPE_CHECKING
 
-	if TYPE_CHECKING:
-		from frappe.types import DF
-		from lending.loan_management.doctype.proposed_pledge.proposed_pledge import ProposedPledge
+    if TYPE_CHECKING:
+        from frappe.types import DF
+        from lending.loan_management.doctype.proposed_pledge.proposed_pledge import ProposedPledge
 
-		amended_from: DF.Link | None
-		applicant: DF.DynamicLink
-		applicant_name: DF.Data | None
-		applicant_type: DF.Literal["Loan Member"]
-		co_borrower: DF.Link | None
-		company: DF.Link
-		description: DF.SmallText | None
-		is_secured_loan: DF.Check
-		is_term_loan: DF.Check
-		loan_amount: DF.Currency
-		loan_product: DF.Link
-		maximum_loan_amount: DF.Currency
-		posting_date: DF.Date | None
-		proposed_pledges: DF.Table[ProposedPledge]
-		rate_of_interest: DF.Percent
-		repayment_amount: DF.Currency
-		repayment_method: DF.Literal["", "Repay Fixed Amount per Period", "Repay Over Number of Periods"]
-		repayment_periods: DF.Int
-		status: DF.Literal["Open", "Approved", "Rejected"]
-		total_payable_amount: DF.Currency
-		total_payable_interest: DF.Currency
-	# end: auto-generated types
+        amended_from: DF.Link | None
+        applicant: DF.DynamicLink
+        applicant_name: DF.Data | None
+        applicant_type: DF.Literal["Loan Member"]
+        co_borrower: DF.Link | None
+        company: DF.Link
+        description: DF.SmallText | None
+        is_secured_loan: DF.Check
+        is_term_loan: DF.Check
+        loan_amount: DF.Currency
+        loan_product: DF.Link
+        maximum_loan_amount: DF.Currency
+        nominee: DF.Link
+        nominee_relation: DF.Literal["Spouse", "Mother", "Father", "Son", "Daughter", "Sister", "Brother"]
+        posting_date: DF.Date | None
+        proposed_pledges: DF.Table[ProposedPledge]
+        rate_of_interest: DF.Percent
+        repayment_amount: DF.Currency
+        repayment_method: DF.Literal["", "Repay Fixed Amount per Period", "Repay Over Number of Periods"]
+        repayment_periods: DF.Int
+        status: DF.Literal["Open", "Approved", "Rejected"]
+        total_payable_amount: DF.Currency
+        total_payable_interest: DF.Currency
+    # end: auto-generated types
 
-	def validate(self):
-		self.set_pledge_amount()
-		self.set_loan_amount()
-		self.validate_loan_amount()
+    def validate(self):
+        self.set_pledge_amount()
+        self.set_loan_amount()
+        self.validate_loan_amount()
 
-		if self.is_term_loan:
-			self.validate_repayment_method()
+        if self.is_term_loan:
+            self.validate_repayment_method()
 
-		self.validate_loan_product()
-		self.validate_employee()
+        self.validate_loan_product()
+        self.validate_employee()
 
-		self.get_repayment_details()
-		self.check_sanctioned_amount_limit()
+        self.get_repayment_details()
+        self.check_sanctioned_amount_limit()
 
-	def on_submit(self):
-		if self.co_borrower:
+
+    def on_update(self):
+        if self.workflow_state == "Approved" and self.docstatus == 0:
+            self.status = "Approved"
+            self.submit()
+
+			
+    def on_submit(self):
+        if self.co_borrower:
             # Step 1: get all approved loan applications with same co_borrower
-			applications = frappe.get_all(
+            applications = frappe.get_all(
                 "Loan Application",
                 filters={
                     "co_borrower": self.co_borrower,
@@ -85,11 +94,11 @@ class LoanApplication(Document):
                 },
                 fields=["name"]
             )
-			if applications:
-				application_names = [app.name for app in applications]
+            if applications:
+                application_names = [app.name for app in applications]
 
                 # Step 2: get all Loans linked to these applications
-				loans = frappe.get_all(
+                loans = frappe.get_all(
                     "Loan",
                     filters={
                         "loan_application": ["in", application_names],
@@ -97,145 +106,143 @@ class LoanApplication(Document):
                     },
                     fields=["name", "status", "applicant", "loan_application"]
                 )
-				if len(loans)>0:
-					print('if loan if ....')
-					frappe.throw(_("Selected co-borrower is already associated with active loan(s). Please select another co-borrower."))
-
+                if len(loans)>0:
+                    frappe.throw(_("Selected co-borrower is already associated with active loan(s). Please select another co-borrower."))
                
+    
+    def validate_repayment_method(self):
+        if self.repayment_method == "Repay Over Number of Periods" and not self.repayment_periods:
+            frappe.throw(_("Please enter Repayment Periods"))
 
-	def validate_repayment_method(self):
-		if self.repayment_method == "Repay Over Number of Periods" and not self.repayment_periods:
-			frappe.throw(_("Please enter Repayment Periods"))
+        if self.repayment_method == "Repay Fixed Amount per Period":
+            if not self.repayment_amount:
+                frappe.throw(_("Please enter repayment Amount"))
+            if self.repayment_amount > self.loan_amount:
+                frappe.throw(_("Monthly Repayment Amount cannot be greater than Loan Amount"))
 
-		if self.repayment_method == "Repay Fixed Amount per Period":
-			if not self.repayment_amount:
-				frappe.throw(_("Please enter repayment Amount"))
-			if self.repayment_amount > self.loan_amount:
-				frappe.throw(_("Monthly Repayment Amount cannot be greater than Loan Amount"))
+    def validate_loan_product(self):
+        company = frappe.get_value("Loan Product", self.loan_product, "company")
+        if company != self.company:
+            frappe.throw(_("Please select Loan Product for company {0}").format(frappe.bold(self.company)))
 
-	def validate_loan_product(self):
-		company = frappe.get_value("Loan Product", self.loan_product, "company")
-		if company != self.company:
-			frappe.throw(_("Please select Loan Product for company {0}").format(frappe.bold(self.company)))
+    def validate_employee(self):
+        if self.applicant_type == "Employee":
+            employee_company = frappe.get_value("Employee", self.applicant, "company")
+            if employee_company != self.company:
+                frappe.throw(
+                    _("Selected employee belongs to {0}. Please select an employee from company {1}.").format(
+                        frappe.bold(employee_company), frappe.bold(self.company)
+                    )
+                )
 
-	def validate_employee(self):
-		if self.applicant_type == "Employee":
-			employee_company = frappe.get_value("Employee", self.applicant, "company")
-			if employee_company != self.company:
-				frappe.throw(
-					_("Selected employee belongs to {0}. Please select an employee from company {1}.").format(
-						frappe.bold(employee_company), frappe.bold(self.company)
-					)
-				)
+    def validate_loan_amount(self):
+        if not self.loan_amount:
+            frappe.throw(_("Loan Amount is mandatory"))
 
-	def validate_loan_amount(self):
-		if not self.loan_amount:
-			frappe.throw(_("Loan Amount is mandatory"))
-
-		maximum_loan_limit = frappe.db.get_value(
+        maximum_loan_limit = frappe.db.get_value(
 			"Loan Product", self.loan_product, "maximum_loan_amount"
 		)
-		if maximum_loan_limit and self.loan_amount > maximum_loan_limit:
-			frappe.throw(
+        if maximum_loan_limit and self.loan_amount > maximum_loan_limit:
+            frappe.throw(
 				_("Loan Amount cannot exceed Maximum Loan Amount of {0}").format(maximum_loan_limit)
 			)
 
-		if self.maximum_loan_amount and self.loan_amount > self.maximum_loan_amount:
-			frappe.throw(
+        if self.maximum_loan_amount and self.loan_amount > self.maximum_loan_amount:
+            frappe.throw(
 				_("Loan Amount exceeds maximum loan amount of {0} as per proposed securities").format(
 					self.maximum_loan_amount
 				)
 			)
 
-	def check_sanctioned_amount_limit(self):
-		sanctioned_amount_limit = get_sanctioned_amount_limit(
+    def check_sanctioned_amount_limit(self):
+        sanctioned_amount_limit = get_sanctioned_amount_limit(
 			self.applicant_type, self.applicant, self.company
 		)
 
-		if sanctioned_amount_limit:
-			total_loan_amount = get_total_loan_amount(self.applicant_type, self.applicant, self.company)
+        if sanctioned_amount_limit:
+            total_loan_amount = get_total_loan_amount(self.applicant_type, self.applicant, self.company)
 
-		if sanctioned_amount_limit and flt(self.loan_amount) + flt(total_loan_amount) > flt(
+        if sanctioned_amount_limit and flt(self.loan_amount) + flt(total_loan_amount) > flt(
 			sanctioned_amount_limit
 		):
-			frappe.throw(
+            frappe.throw(
 				_("Sanctioned Amount limit crossed for {0} {1}").format(
 					self.applicant_type, frappe.bold(self.applicant)
 				)
 			)
 
-	def set_pledge_amount(self):
-		for proposed_pledge in self.proposed_pledges:
+    def set_pledge_amount(self):
+        for proposed_pledge in self.proposed_pledges:
 
-			if not proposed_pledge.qty:
-				frappe.throw(_("Qty is mandatory for loan security!"))
+            if not proposed_pledge.qty:
+                frappe.throw(_("Qty is mandatory for loan security!"))
 
-			if not proposed_pledge.loan_security_price:
-				loan_security_price = get_loan_security_price(proposed_pledge.loan_security)
+            if not proposed_pledge.loan_security_price:
+                loan_security_price = get_loan_security_price(proposed_pledge.loan_security)
 
-				if loan_security_price:
-					proposed_pledge.loan_security_price = loan_security_price
-				else:
-					frappe.throw(
+                if loan_security_price:
+                    proposed_pledge.loan_security_price = loan_security_price
+                else:
+                    frappe.throw(
 						_("No valid Loan Security Price found for {0}").format(
 							frappe.bold(proposed_pledge.loan_security)
 						)
 					)
 
-			proposed_pledge.amount = proposed_pledge.qty * proposed_pledge.loan_security_price
-			proposed_pledge.post_haircut_amount = cint(
+            proposed_pledge.amount = proposed_pledge.qty * proposed_pledge.loan_security_price
+            proposed_pledge.post_haircut_amount = cint(
 				proposed_pledge.amount - (proposed_pledge.amount * proposed_pledge.haircut / 100)
 			)
 
-	def get_repayment_details(self):
+    def get_repayment_details(self):
 
-		if self.is_term_loan:
-			if self.repayment_method == "Repay Over Number of Periods":
-				self.repayment_amount = get_monthly_repayment_amount(
+        if self.is_term_loan:
+            if self.repayment_method == "Repay Over Number of Periods":
+                self.repayment_amount = get_monthly_repayment_amount(
 					self.loan_amount, self.rate_of_interest, self.repayment_periods, "Monthly"
 				)
 
-			if self.repayment_method == "Repay Fixed Amount per Period":
-				monthly_interest_rate = flt(self.rate_of_interest) / (12 * 100)
-				if monthly_interest_rate:
-					min_repayment_amount = self.loan_amount * monthly_interest_rate
-					if self.repayment_amount - min_repayment_amount <= 0:
-						frappe.throw(_("Repayment Amount must be greater than " + str(flt(min_repayment_amount, 2))))
-					self.repayment_periods = math.ceil(
+            if self.repayment_method == "Repay Fixed Amount per Period":
+                monthly_interest_rate = flt(self.rate_of_interest) / (12 * 100)
+                if monthly_interest_rate:
+                    min_repayment_amount = self.loan_amount * monthly_interest_rate
+                    if self.repayment_amount - min_repayment_amount <= 0:
+                        frappe.throw(_("Repayment Amount must be greater than " + str(flt(min_repayment_amount, 2))))
+                    self.repayment_periods = math.ceil(
 						(math.log(self.repayment_amount) - math.log(self.repayment_amount - min_repayment_amount))
 						/ (math.log(1 + monthly_interest_rate))
 					)
-				else:
-					self.repayment_periods = self.loan_amount / self.repayment_amount
+                else:
+                    self.repayment_periods = self.loan_amount / self.repayment_amount
 
-			self.calculate_payable_amount()
-		else:
-			self.total_payable_amount = self.loan_amount
+            self.calculate_payable_amount()
+        else:
+            self.total_payable_amount = self.loan_amount
 
-	def calculate_payable_amount(self):
-		balance_amount = self.loan_amount
-		self.total_payable_amount = 0
-		self.total_payable_interest = 0
+    def calculate_payable_amount(self):
+        balance_amount = self.loan_amount
+        self.total_payable_amount = 0
+        self.total_payable_interest = 0
 
-		while balance_amount > 0:
-			interest_amount = rounded(balance_amount * flt(self.rate_of_interest) / (12 * 100))
-			balance_amount = rounded(balance_amount + interest_amount - self.repayment_amount)
+        while balance_amount > 0:
+            interest_amount = rounded(balance_amount * flt(self.rate_of_interest) / (12 * 100))
+            balance_amount = rounded(balance_amount + interest_amount - self.repayment_amount)
 
-			self.total_payable_interest += interest_amount
+            self.total_payable_interest += interest_amount
 
-		self.total_payable_amount = self.loan_amount + self.total_payable_interest
+        self.total_payable_amount = self.loan_amount + self.total_payable_interest
 
-	def set_loan_amount(self):
-		if self.is_secured_loan and not self.proposed_pledges:
-			frappe.throw(_("Proposed Pledges are mandatory for secured Loans"))
+    def set_loan_amount(self):
+        if self.is_secured_loan and not self.proposed_pledges:
+            frappe.throw(_("Proposed Pledges are mandatory for secured Loans"))
 
-		if self.is_secured_loan and self.proposed_pledges:
-			self.maximum_loan_amount = 0
-			for security in self.proposed_pledges:
-				self.maximum_loan_amount += flt(security.post_haircut_amount)
+        if self.is_secured_loan and self.proposed_pledges:
+            self.maximum_loan_amount = 0
+            for security in self.proposed_pledges:
+                self.maximum_loan_amount += flt(security.post_haircut_amount)
 
-		if not self.loan_amount and self.is_secured_loan and self.proposed_pledges:
-			self.loan_amount = self.maximum_loan_amount
+        if not self.loan_amount and self.is_secured_loan and self.proposed_pledges:
+            self.loan_amount = self.maximum_loan_amount
 
 
 @frappe.whitelist()
@@ -450,6 +457,9 @@ def bulk_import_loan_applications(file_url):
     for idx, row in df.iterrows():
         # print('row ....', row)
         try:
+            nominee_name = row.get("NOMINEE FULL NAME")
+            relation = str(row.get("RELATIONSHIP OF NOMINEE WITH BORROWER")).title()
+
             # print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
             # --- Get Loan Product ---
             loan_product = frappe.get_value("Loan Product", {"rate_of_interest": row.get("ROI")}, "name")
@@ -461,6 +471,10 @@ def bulk_import_loan_applications(file_url):
             applicant = frappe.get_value("Loan Member", {"member_id": row.get("MEMBER NO")}, "name")
             if not applicant:
                 raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
+            
+            nominee_details = frappe.get_value("Loan Member", {"member_name": nominee_name}, "name")
+            if not nominee_details:
+                raise Exception(f"Applicant '{nominee_name}' not found")
 
             # --- Parse Date ---
             loan_date = row.get("LOAN SANCTION DATE/ trasancation date")
@@ -489,9 +503,10 @@ def bulk_import_loan_applications(file_url):
                 "repayment_amount": row.get("EMI"),
                 "rate_of_interest": row.get("ROI"),
                 "posting_date": loan_date,
-				"status":"Approved"
+				"status":"Approved",
+                "nominee":nominee_details,
+                "nominee_relation":relation
             }
-            # print('loan_data ...',loan_data)
 
             loan_doc = frappe.get_doc(loan_data)
             loan_doc.insert()
@@ -541,6 +556,8 @@ def create_loan_application():
             "applicant": data.get("applicant"),
             "applicant_name": data.get("applicant_name"),
             "co_borrower": data.get("co_borrower"),
+            "nominee":data.get("nominee"),
+            "nominee_relation":data.get("nominee_relation"),
             "company": company,
             "loan_product": data.get("loan_product"),
             "loan_amount": data.get("loan_amount"),
@@ -555,6 +572,7 @@ def create_loan_application():
         
         # Step 3: Insert Loan Application (runs validate() automatically)
         doc.insert(ignore_permissions=True)
+        new_doc = apply_workflow(doc, "Submit for verification")
         frappe.db.commit()
 
         return {
