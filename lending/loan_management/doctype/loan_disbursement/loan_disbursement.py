@@ -119,7 +119,8 @@ class LoanDisbursement(AccountsController):
 			"posting_date": self.disbursement_date,
 			"repayment_frequency": self.repayment_frequency,
 			"disbursed_amount": self.disbursed_amount,
-			"current_principal_amount": self.disbursed_amount,
+			# for amount on which schedules should be calcaulted 
+			"current_principal_amount": self.sanctioned_loan_amount,
 			"monthly_repayment_amount": self.monthly_repayment_amount
 			if self.repayment_method == "Repay Fixed Amount per Period"
 			else 0,
