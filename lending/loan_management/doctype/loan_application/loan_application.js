@@ -237,12 +237,15 @@ frappe.ui.form.on("Loan Application", {
             if (frm.doc.applicant_type === "Loan Member") {
                 return {
                     filters: {
-                        status: "Verified"
-                    }
+                        status: "Verified",
+                    },
+					query: "lending.loan_management.doctype.loan_application.loan_application.get_loan_members_for_user",
+
                 };
             }
         });
     }
 });
+
 
 

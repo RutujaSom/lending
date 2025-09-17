@@ -729,3 +729,56 @@ def loan_application_list(page=1, page_size=10, search=None, sort_by="name", sor
         # link_fields={"applicant": "member_name"},  # 👈 you can also expand Loan Member fields if needed
     )
 
+
+
+
+
+
+
+@frappe.whitelist()
+def get_loan_members_for_user(doctype, txt, searchfield, start, page_len, filters):
+    user = frappe.session.user
+
+    if user == "Administrator":
+        return frappe.db.sql(f"""
+            SELECT name, member_name
+            FROM `tabLoan Member`
+            WHERE {searchfield} LIKE %s
+            ORDER BY member_name ASC
+            LIMIT %s OFFSET %s
+        """, (f"%{txt}%", page_len, start))
+
+    if "Agent" in frappe.get_roles(user):
+        # Get employee id
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return []
+
+        # Get loan groups for this employee
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+        if not groups:
+            return []
+
+        groups_str = "', '".join(groups)
+
+        return frappe.db.sql(f"""
+            SELECT name, member_name
+            FROM `tabLoan Member`
+            WHERE `group` IN ('{groups_str}')
+            AND {searchfield} LIKE %s
+            ORDER BY member_name ASC
+            LIMIT %s OFFSET %s
+        """, (f"%{txt}%", page_len, start))
+
+    # default → no restriction
+    return frappe.db.sql(f"""
+        SELECT name, member_name
+        FROM `tabLoan Member`
+        WHERE {searchfield} LIKE %s
+        ORDER BY member_name ASC
+        LIMIT %s OFFSET %s
+    """, (f"%{txt}%", page_len, start))
