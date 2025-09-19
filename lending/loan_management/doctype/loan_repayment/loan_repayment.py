@@ -31,7 +31,7 @@ from frappe.query_builder import DocType
 from pypika.functions import Max
 from pypika.functions import Sum
 from frappe.utils import flt
-from ex_loan_management.api.utils import get_paginated_data
+from ex_loan_management.api.utils import get_paginated_data, api_error
 
 class LoanRepayment(AccountsController):
 	# begin: auto-generated types
@@ -3378,7 +3378,8 @@ def bulk_import_loan_repayments(file_url):
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Bulk Import Loan Repayments Error")
-        return {"error": str(e)}
+        # return {"error": str(e)}
+        return api_error(e)
 
 
 
@@ -3562,12 +3563,13 @@ def create_loan_repayment():
 
         return {
             "status": "success",
-            "name": doc.name,
-            "loan_repayment": doc.as_dict()
+            "status_code": 201,
+            "msg": "Loan Repayment Created Successfully"
         }
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Loan Repayment API Error")
-        return {"status": "error", "message": str(e)}
+        # return {"status": "error", "message": str(e)}
+        return api_error(e)
 
 

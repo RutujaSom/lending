@@ -24,7 +24,7 @@ from lending.loan_management.doctype.loan_security_price.loan_security_price imp
 import frappe
 import pandas as pd
 from datetime import datetime
-from ex_loan_management.api.utils import get_paginated_data
+from ex_loan_management.api.utils import get_paginated_data, api_error
 
 
 class LoanApplication(Document):
@@ -577,13 +577,14 @@ def create_loan_application():
 
         return {
             "status": "success",
-            "name": doc.name,
-            "loan_application": doc.as_dict()
+            "status_code": 201,
+            "msg": "Loan Application Created Successfully"
         }
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Loan Application API Error")
-        return {"status": "error", "message": str(e)}
+        # return {"status": "error", "message": str(e)}
+        return api_error(e)
 
 
 
@@ -606,13 +607,14 @@ def send_for_verification(application_name):
 
         return {
             "status": "success",
-            "message": f"Loan Application {application_name} submitted for verification",
-            "loan_application": new_doc.as_dict()
+            "status_code": 201,
+            "msg": f"Loan Application {application_name} submitted for verification",
         }
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Send for Verification API Error")
-        return {"status": "error", "message": str(e)}
+        # return {"status": "error", "message": str(e)}
+        return api_error(e)
 
 
 
