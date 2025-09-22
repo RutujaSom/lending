@@ -47,6 +47,7 @@
   "unbooked_interest_paid",
   "unbooked_penalty_paid",
   "payable_charges",
+  "payment_proof",
   "column_break_21",
   "reference_date",
   "principal_amount_paid",
@@ -542,13 +543,18 @@
    "in_list_view": 1,
    "label": "Posting Date",
    "reqd": 1
+  },
+  {
+   "fieldname": "payment_proof",
+   "fieldtype": "Attach",
+   "label": "Payment Proof"
   }
  ],
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-05 11:58:32.922003",
+ "modified": "2025-09-22 11:50:03.893928",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Repayment",
