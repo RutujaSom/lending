@@ -30,124 +30,6 @@ class RepaymentSchedule(Document):
 	pass
 
 
-
-
-# import frappe
-# from frappe.utils import today
-
-# @frappe.whitelist()
-# def get_todays_emis(selected_date=None):
-#     if not selected_date:
-#         selected_date = today()
-
-#     emis = frappe.db.sql("""
-#         SELECT 
-#             rs.parent as loan_repayment_schedule,
-#             rs.payment_date,
-#             rs.principal_amount,
-#             rs.interest_amount,
-#             rs.total_payment,
-#             rs.balance_loan_amount,
-#             lrs.loan,
-#             l.applicant_type,
-#             l.applicant,
-#             lm.member_name,
-#             COALESCE(SUM(lr.amount_paid), 0) as amount_paid,
-#             CASE 
-#                 WHEN COALESCE(SUM(lr.amount_paid), 0) >= rs.total_payment THEN 'Done ✅'
-#                 WHEN COALESCE(SUM(lr.amount_paid), 0) > 0 AND COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment THEN 'Partial ⚠️'
-#                 ELSE 'Pending ❌'
-#             END as payment_status,
-#             CASE 
-#                 WHEN COALESCE(SUM(lr.amount_paid), 0) >= rs.total_payment THEN 0
-#                 ELSE rs.total_payment - COALESCE(SUM(lr.amount_paid), 0)
-#             END as remaining_amount
-#         FROM `tabRepayment Schedule` rs
-#         LEFT JOIN `tabLoan Repayment Schedule` lrs ON rs.parent = lrs.name
-#         LEFT JOIN `tabLoan` l ON l.name = lrs.loan
-#         LEFT JOIN `tabLoan Member` lm 
-#             ON (l.applicant_type = 'Loan Member' AND l.applicant = lm.name)
-#         LEFT JOIN `tabLoan Repayment` lr 
-#             ON lr.against_loan = lrs.loan 
-#             AND DATE(lr.posting_date) = rs.payment_date
-#             AND lr.docstatus = 1
-#         WHERE rs.payment_date <= %s and rs.balance_loan_amount >0
-#         GROUP BY rs.name
-#         HAVING COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment
-#     """, selected_date, as_dict=True)
-
-#     return emis
-
-
-
-
-
-
-# import frappe
-# from frappe.utils import today
-
-# @frappe.whitelist()
-# def get_todays_emis(selected_date=None, search_text=None, sort_by="rs.payment_date", sort_order="ASC"):
-#     if not selected_date:
-#         selected_date = today()
-
-#     # Validate sort_by to prevent SQL injection (only allow known fields)
-#     allowed_sort_fields = ["rs.payment_date", "lm.member_name", "lrs.loan", "rs.total_payment", "rs.balance_loan_amount"]
-#     if sort_by not in allowed_sort_fields:
-#         sort_by = "rs.payment_date"
-
-#     sort_order = "ASC" if sort_order.upper() == "ASC" else "DESC"
-
-#     conditions = "WHERE rs.payment_date <= %s and rs.balance_loan_amount > 0"
-#     params = [selected_date]
-
-#     # Add dynamic search (searching applicant name or loan number)
-#     if search_text:
-#         conditions += " AND (lm.member_name LIKE %s OR lrs.loan LIKE %s)"
-#         params.extend([f"%{search_text}%", f"%{search_text}%"])
-
-#     query = f"""
-#         SELECT 
-#             rs.parent as loan_repayment_schedule,
-#             rs.payment_date,
-#             rs.principal_amount,
-#             rs.interest_amount,
-#             rs.total_payment,
-#             rs.balance_loan_amount,
-#             lrs.loan,
-#             l.applicant_type,
-#             l.applicant,
-#             lm.member_name,
-#             COALESCE(SUM(lr.amount_paid), 0) as amount_paid,
-#             CASE 
-#                 WHEN COALESCE(SUM(lr.amount_paid), 0) >= rs.total_payment THEN 'Done ✅'
-#                 WHEN COALESCE(SUM(lr.amount_paid), 0) > 0 AND COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment THEN 'Partial ⚠️'
-#                 ELSE 'Pending ❌'
-#             END as payment_status,
-#             CASE 
-#                 WHEN COALESCE(SUM(lr.amount_paid), 0) >= rs.total_payment THEN 0
-#                 ELSE rs.total_payment - COALESCE(SUM(lr.amount_paid), 0)
-#             END as remaining_amount
-#         FROM `tabRepayment Schedule` rs
-#         LEFT JOIN `tabLoan Repayment Schedule` lrs ON rs.parent = lrs.name
-#         LEFT JOIN `tabLoan` l ON l.name = lrs.loan
-#         LEFT JOIN `tabLoan Member` lm 
-#             ON (l.applicant_type = 'Loan Member' AND l.applicant = lm.name)
-#         LEFT JOIN `tabLoan Repayment` lr 
-#             ON lr.against_loan = lrs.loan 
-#             AND DATE(lr.posting_date) = rs.payment_date
-#             AND lr.docstatus = 1
-#         {conditions}
-#         GROUP BY rs.name
-#         HAVING COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment
-#         ORDER BY {sort_by} {sort_order}
-#     """
-
-#     emis = frappe.db.sql(query, tuple(params), as_dict=True)
-#     return emis
-
-
-
 import frappe
 from frappe.utils import today, nowdate
 
@@ -159,11 +41,11 @@ def get_todays_emis(
     sort_order="ASC", 
     employee=None,
     loan_group=None,
-    is_pagination=False
+    is_pagination=False,
+    upto_date=None,
 ):
-    print('employee .....',employee)
-    if not selected_date:
-        selected_date = today()
+    if not upto_date:
+        upto_date = today()
 
     # Validate sort_by to prevent SQL injection
     allowed_sort_fields = [
@@ -175,11 +57,15 @@ def get_todays_emis(
 
     sort_order = "ASC" if sort_order.upper() == "ASC" else "DESC"
 
-    # Base conditions
-    conditions = "WHERE rs.payment_date <= %s and rs.balance_loan_amount > 0"
-    params = [selected_date]
+    if selected_date:
+        conditions = "WHERE rs.payment_date = %s and rs.balance_loan_amount > 0"
+        params = [selected_date]
 
-    print('loan_group /////',loan_group)
+    else:
+        conditions = "WHERE rs.payment_date <= %s and rs.balance_loan_amount > 0"
+        params = [upto_date]
+
+
     if loan_group:
         conditions += " AND lm.group LIKE %s"
         params.extend([f"%{loan_group}%"])
