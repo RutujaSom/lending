@@ -92,6 +92,7 @@ def get_amounts(
 	additional_principal_amount=0,
 	pending_prev_days=0,
 ):
+	print("days ...........",days, 'months ...',months)
 	precision = cint(frappe.db.get_default("currency_precision")) or 2
 
 	if additional_principal_amount:
@@ -103,6 +104,7 @@ def get_amounts(
 	interest_amount = flt(
 		current_balance_amount * flt(rate_of_interest) * days / (months * 100), precision
 	)
+	print("interest_amount ....",flt(interest_amount))
 
 	principal_amount = monthly_repayment_amount - flt(interest_amount)
 

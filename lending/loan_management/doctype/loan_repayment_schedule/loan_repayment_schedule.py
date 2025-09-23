@@ -302,7 +302,7 @@ class LoanRepaymentSchedule(Document):
 		) = self.add_rows_from_prev_disbursement("repayment_schedule", 100, 100)
 
 		if flt(balance_amount, self.precision) > 0:
-			# print('make_repayment_schedule .....')
+			print(" make_customer_repayment_schedule ... previous_interest_amount .......",previous_interest_amount)
 			self.make_repayment_schedule(
 				"repayment_schedule",
 				previous_interest_amount,
@@ -366,12 +366,14 @@ class LoanRepaymentSchedule(Document):
 		interest_share_percentage,
 		partner_schedule_type=None,
 	):
+		print('previous_interest_amount ...............',previous_interest_amount)
 		payment_date = self.repayment_start_date
+		original_day = self.repayment_start_date
+		previous_date = None
 		carry_forward_interest = self.adjusted_interest
 		moratorium_interest = 0
 		row = 0
 		if not self.restructure_type and self.repayment_method != "Repay Fixed Amount per Period":
-			# print('self.repayment_days ....',self.repayment_days)
 			monthly_repayment_amount = get_monthly_repayment_amount(
 				balance_amount, rate_of_interest, self.repayment_periods, self.repayment_frequency
 			)
@@ -425,6 +427,7 @@ class LoanRepaymentSchedule(Document):
 				schedule_field,
 				principal_share_percentage,
 				interest_share_percentage,
+				previous_date,
 			)
 
 			(
@@ -458,6 +461,7 @@ class LoanRepaymentSchedule(Document):
 			if (
 				self.moratorium_end_date and self.moratorium_tenure and self.repayment_frequency == "Monthly"
 			):
+				print("in if. .........")
 				if getdate(payment_date) <= getdate(self.moratorium_end_date):
 					principal_amount = 0
 					balance_amount = self.current_principal_amount
@@ -474,10 +478,13 @@ class LoanRepaymentSchedule(Document):
 					and self.treatment_of_interest == "Add to first repayment"
 					and moratorium_interest
 				):
+					print("in else ...........", moratorium_interest)
 					interest_amount += moratorium_interest
 					total_payment = principal_amount + interest_amount
 					moratorium_interest = 0
 
+			
+			print("interest_amount .........",interest_amount, 'interest_share_percentage ..........',interest_share_percentage)
 			self.add_repayment_schedule_row(
 				payment_date,
 				principal_amount,
@@ -507,7 +514,8 @@ class LoanRepaymentSchedule(Document):
 				)
 				balance_amount = 0
 
-			payment_date = self.get_next_payment_date(payment_date)
+			previous_date = payment_date
+			payment_date = self.get_next_payment_date(payment_date, original_day)
 			carry_forward_interest = 0
 			additional_days = 0
 			additional_principal_amount = 0
@@ -521,7 +529,32 @@ class LoanRepaymentSchedule(Document):
 		else:
 			self.repayment_periods = self.number_of_rows
 
-	def get_next_payment_date(self, payment_date):
+	# def get_next_payment_date(self, payment_date):
+	# 	if (
+	# 		self.repayment_schedule_type
+	# 		in [
+	# 			"Monthly as per repayment start date",
+	# 			"Monthly as per cycle date",
+	# 			"Line of Credit",
+	# 			"Pro-rated calendar months",
+	# 		]
+	# 	) and self.repayment_frequency == "Monthly":
+	# 		next_payment_date = add_single_month(payment_date)
+	# 		payment_date = next_payment_date
+	# 	elif self.repayment_frequency == "Bi-Weekly":
+	# 		payment_date = add_days(payment_date, 14)
+	# 	elif self.repayment_frequency == "Weekly":
+	# 		payment_date = add_days(payment_date, 7)
+	# 	elif self.repayment_frequency == "Daily":
+	# 		payment_date = add_days(payment_date, 1)
+	# 	elif self.repayment_frequency == "Quarterly":
+	# 		payment_date = add_months(payment_date, 3)
+
+	# 	return payment_date
+
+	def get_next_payment_date(self, payment_date, original_day=None):
+		# print("payment_date ...",payment_date, "original_day ...",original_day)
+		# Step 1: calculate the base next cycle date
 		if (
 			self.repayment_schedule_type
 			in [
@@ -531,18 +564,74 @@ class LoanRepaymentSchedule(Document):
 				"Pro-rated calendar months",
 			]
 		) and self.repayment_frequency == "Monthly":
-			next_payment_date = add_single_month(payment_date)
-			payment_date = next_payment_date
+			base_next_date = add_single_month(payment_date)
 		elif self.repayment_frequency == "Bi-Weekly":
-			payment_date = add_days(payment_date, 14)
+			base_next_date = add_days(payment_date, 14)
 		elif self.repayment_frequency == "Weekly":
-			payment_date = add_days(payment_date, 7)
+			base_next_date = add_days(payment_date, 7)
 		elif self.repayment_frequency == "Daily":
-			payment_date = add_days(payment_date, 1)
+			base_next_date = add_days(payment_date, 1)
 		elif self.repayment_frequency == "Quarterly":
-			payment_date = add_months(payment_date, 3)
+			base_next_date = add_months(payment_date, 3)
+		else:
+			base_next_date = payment_date
+
+
+		"""
+			Check if the company has a holiday list (skip_holiday_on_loan_schedule) enabled to update holiday dates in schedule records.
+
+			If holiday list is applicable, verify whether the EMI date falls on a holiday.
+			- If yes, update the EMI date to the previous working day.
+
+			Developer: Rutuja Somvanshi
+			Date: 23-09-2025
+		"""
+		company_data = frappe.get_doc("Company", self.company)
+		print("company_data.skip_holiday_on_loan_schedule ....",company_data.skip_holiday_on_loan_schedule)
+		if company_data.skip_holiday_on_loan_schedule:
+			print('in if ........')
+			from datetime import date, datetime
+			if isinstance(base_next_date, str):
+				base_next_date = datetime.strptime(base_next_date, '%Y-%m-%d').date()
+			year = base_next_date.year
+			month = base_next_date.month
+			if isinstance(original_day, str):
+				original_day = datetime.strptime(original_day, '%Y-%m-%d').date()
+				
+			day = min(original_day.day, self.get_last_day_of_month(year, month))  # Avoid overflow like Feb 30
+			payment_date = self.get_valid_payment_date(date(year, month, day), company_data)
+		
+		return payment_date
+
+	
+	""" Check if date is exists in given month if not then get last day of month
+	    """
+	def get_last_day_of_month(self, year, month):
+		"""
+		Return last day of month for given year/month
+		"""
+		from calendar import monthrange
+		return monthrange(year, month)[1]
+
+	
+	def get_valid_payment_date(self, payment_date, company_data):
+		"""
+		Check if payment_date falls on any holiday across all Holiday Lists.
+		If yes, keep subtracting 1 day until a non-holiday date is found.
+		Developer: Rutuja Somvanshi
+		Date: 23-09-2025
+		"""
+		while True:
+			# Check if the date exists in ANY holiday
+			holiday = frappe.db.exists("Holiday", {"holiday_date": payment_date, "parent":company_data.default_holiday_list})
+			if holiday:
+				# If holiday found → move 1 day back
+				payment_date = add_days(payment_date, -1)
+			else:
+				break
 
 		return payment_date
+
 
 	def get_applicable_tenure(self, payment_date):
 		loan_status = frappe.db.get_value("Loan", self.loan, "status") or "Sanctioned"
@@ -841,6 +930,82 @@ class LoanRepaymentSchedule(Document):
 			if self.monthly_repayment_amount > self.loan_amount:
 				frappe.throw(_("Monthly Repayment Amount cannot be greater than Loan Amount"))
 
+	# def get_days_and_months(
+	# 	self,
+	# 	payment_date,
+	# 	additional_days,
+	# 	balance_amount,
+	# 	rate_of_interest,
+	# 	schedule_field,
+	# 	principal_share_percentage,
+	# 	interest_share_percentage,
+	# ):
+	# 	months = 365
+	# 	if self.repayment_frequency == "Monthly":
+	# 		expected_payment_date = get_last_day(payment_date)
+	# 		if self.repayment_date_on == "Start of the next month":
+	# 			expected_payment_date = add_days(expected_payment_date, 1)
+
+	# 		if self.repayment_schedule_type in (
+	# 			"Monthly as per cycle date",
+	# 			"Line of Credit",
+	# 			"Monthly as per repayment start date",
+	# 			"Pro-rated calendar months",
+	# 		):
+	# 			days = date_diff(payment_date, add_months(payment_date, -1))
+	# 			if (
+	# 				additional_days < 0
+	# 				or (additional_days > 0 and self.moratorium_tenure and not self.restructure_type)
+	# 				or (additional_days > 0 and self.restructure_type == "Normal Restructure")
+	# 			):
+	# 				days = date_diff(payment_date, self.posting_date)
+	# 				additional_days = 0
+
+	# 			if additional_days and not self.moratorium_tenure and not self.restructure_type:
+	# 				self.add_broken_period_interest(
+	# 					balance_amount,
+	# 					rate_of_interest,
+	# 					additional_days,
+	# 					payment_date,
+	# 					schedule_field,
+	# 					principal_share_percentage=principal_share_percentage,
+	# 					interest_share_percentage=interest_share_percentage,
+	# 				)
+	# 				additional_days = 0
+
+	# 		elif expected_payment_date == payment_date:
+	# 			if self.repayment_schedule_type == "Pro-rated calendar months":
+	# 				if payment_date == self.repayment_start_date:
+	# 					days = date_diff(payment_date, self.posting_date)
+	# 				elif self.repayment_date_on == "End of the current month":
+	# 					days = date_diff(payment_date, get_first_day(payment_date)) + 1
+	# 				else:
+	# 					days = date_diff(get_last_day(payment_date), payment_date) + 1
+	# 			else:
+	# 				# using 30 days for calculating interest for all full months
+	# 				days = 30
+	# 		else:
+	# 			if payment_date == self.repayment_start_date:
+	# 				days = date_diff(payment_date, self.posting_date)
+	# 			else:
+	# 				days = date_diff(get_last_day(payment_date), payment_date)
+	# 	else:
+	# 		if payment_date == self.repayment_start_date:
+	# 			days = date_diff(payment_date, self.posting_date)
+	# 		elif self.repayment_frequency == "Bi-Weekly":
+	# 			days = 14
+	# 		elif self.repayment_frequency == "Weekly":
+	# 			days = 7
+	# 		elif self.repayment_frequency == "Daily":
+	# 			days = 1
+	# 		elif self.repayment_frequency == "Quarterly":
+	# 			days = 3
+	# 		elif self.repayment_frequency == "One Time":
+	# 			days = date_diff(self.repayment_start_date, self.posting_date)
+
+	# 	return days, months
+
+
 	def get_days_and_months(
 		self,
 		payment_date,
@@ -850,6 +1015,7 @@ class LoanRepaymentSchedule(Document):
 		schedule_field,
 		principal_share_percentage,
 		interest_share_percentage,
+		previous_date=None,
 	):
 		months = 365
 		if self.repayment_frequency == "Monthly":
@@ -863,13 +1029,36 @@ class LoanRepaymentSchedule(Document):
 				"Monthly as per repayment start date",
 				"Pro-rated calendar months",
 			):
+				print("payment_date ....",payment_date, 'previous_date ...',previous_date)
+				print(".......",add_months(payment_date, -1))
 				days = date_diff(payment_date, add_months(payment_date, -1))
+				print("days .........",days)
+				
+				"""
+					Check if the company has a holiday list (skip_holiday_on_loan_schedule) enabled to update holiday dates in schedule records.
+
+					If holiday list is applicable, verify whether the EMI date falls on a holiday.
+					- If yes, update the EMI date to the previous working day.
+					- Also adjust the interest calculation for the updated date.
+
+					Developer: Rutuja Somvanshi
+					Date: 23-09-2025
+				"""
+
+				company_data = frappe.get_doc("Company", self.company)
+				if company_data.skip_holiday_on_loan_schedule:
+					if previous_date:
+						days = date_diff(payment_date, previous_date)
+
+				print("days 1111111 s.........",days)
 				if (
 					additional_days < 0
 					or (additional_days > 0 and self.moratorium_tenure and not self.restructure_type)
 					or (additional_days > 0 and self.restructure_type == "Normal Restructure")
 				):
+					print("self.posting_date .......",self.posting_date)
 					days = date_diff(payment_date, self.posting_date)
+					print("days .............,", days)
 					additional_days = 0
 
 				if additional_days and not self.moratorium_tenure and not self.restructure_type:
@@ -915,6 +1104,8 @@ class LoanRepaymentSchedule(Document):
 				days = date_diff(self.repayment_start_date, self.posting_date)
 
 		return days, months
+
+	
 
 	def add_broken_period_interest(
 		self,
@@ -966,7 +1157,8 @@ class LoanRepaymentSchedule(Document):
 
 		if not repayment_schedule_field:
 			repayment_schedule_field = "repayment_schedule"
-
+		
+		print("interest_amount ..........",interest_amount, 'interest_share_percentage .....',interest_share_percentage)
 		interest_amount = interest_amount * interest_share_percentage / 100
 		principal_amount = principal_amount * principal_share_percentage / 100
 		total_payment = principal_amount + interest_amount
@@ -1010,7 +1202,6 @@ def bulk_update_repayment_dates(file_url):
 
 		# Read file with pandas
         df = pd.read_excel(file_path)
-        # print('df ...///....  ', df)
 
         success, errors = [], []
 
@@ -1031,9 +1222,7 @@ def bulk_update_repayment_dates(file_url):
                     filters={"loan": loan_name.name},
                     fields=["name"]
                 )
-                # print('schedule .....',schedule)
                 if not schedule:
-                    # print('in not schedule.....')
                     errors.append(f"Row {idx+1}: No repayment schedule found for loan {loan_id}")
                     continue
 
