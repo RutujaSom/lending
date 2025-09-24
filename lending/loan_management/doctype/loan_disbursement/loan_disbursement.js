@@ -102,3 +102,66 @@ function open_import_dialog() {
 }
 
 
+
+frappe.ui.form.on("Loan Disbursement", {
+    against_loan: function(frm) {
+        if (frm.doc.against_loan) {
+            frappe.call({
+                method: "frappe.client.get",
+                args: {
+                    doctype: "Loan",
+                    name: frm.doc.against_loan
+                },
+                callback: function(r) {
+                    if (r.message) {
+                        let loan = r.message;
+                        let loan_amount = loan.loan_amount || 0;
+                        let total_charges = 0;
+
+                        // ✅ Get company setting first
+                        frappe.call({
+                            method: "frappe.client.get_value",
+                            args: {
+                                doctype: "Company",
+                                filters: { name: loan.company },
+                                fieldname: ["deduct_charges_in_loan_disbursement"]
+                            },
+                            callback: function(cmp) {
+                                if (cmp.message && cmp.message.deduct_charges_in_loan_disbursement) {
+                                    // ✅ Deduct charges if enabled
+                                    if (loan.loan_product) {
+                                        frappe.call({
+                                            method: "frappe.client.get",
+                                            args: {
+                                                doctype: "Loan Product",
+                                                name: loan.loan_product
+                                            },
+                                            callback: function(res) {
+                                                if (res.message) {
+                                                    let charges = res.message.loan_charges || [];
+                                                    charges.forEach(c => {
+                                                        if (c.charge_based_on == 'Percentage') {
+                                                            total_charges += (loan_amount * c.percentage) / 100;
+                                                        } else {
+                                                            total_charges += c.amount;
+                                                        }
+                                                    });
+
+                                                    let net_amount = loan_amount - total_charges;
+                                                    frm.set_value("disbursed_amount", net_amount);
+                                                }
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    // ❌ No deduction → Disburse full loan amount
+                                    frm.set_value("disbursed_amount", loan_amount);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+});
