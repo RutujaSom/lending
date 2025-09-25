@@ -50,7 +50,7 @@ class LoanApplication(Document):
         loan_product: DF.Link
         maximum_loan_amount: DF.Currency
         nominee: DF.Link
-        nominee_relation: DF.Literal["Spouse", "Mother", "Father", "Son", "Daughter", "Sister", "Brother"]
+        nominee_relation: DF.Literal["Spouse", "Mother", "Father", "Son", "Daughter", "Sister", "Brother", "Husband", "Wife", "Friend", "Other"]
         posting_date: DF.Date | None
         proposed_pledges: DF.Table[ProposedPledge]
         rate_of_interest: DF.Percent
