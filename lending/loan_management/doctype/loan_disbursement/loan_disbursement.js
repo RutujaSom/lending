@@ -102,8 +102,35 @@ function open_import_dialog() {
 }
 
 
-
 frappe.ui.form.on("Loan Disbursement", {
+    
+    // --------------------------------------------------------
+    // On Form Load
+    // Prefill fields from Loan if opened via connection (+ button)
+    // Developer: Rutuja Somvanshi
+    // Date: 25-09-2025
+    // --------------------------------------------------------
+    onload: function(frm) {
+        if (frm.doc.against_loan && !frm.doc.loan_amount) {
+            // Trigger loan link logic manually (to refresh fetch_from fields)
+            frm.trigger("against_loan");
+
+            // Fetch Loan details and set mapped values
+            frappe.db.get_doc("Loan", frm.doc.against_loan).then(loan => {
+                if (loan) {
+                    frm.set_value("sanctioned_loan_amount", loan.loan_amount);
+                    frm.set_value("current_disbursed_amount", loan.disbursed_amount);
+                    frm.set_value("loan_partner", loan.loan_partner);
+                    frm.set_value("monthly_repayment_amount", loan.monthly_repayment_amount);
+                }
+            });
+        }
+    },
+
+    // --------------------------------------------------------
+    // On Loan Selection
+    // Calculate disbursed amount considering charges & settings
+    // --------------------------------------------------------
     against_loan: function(frm) {
         if (frm.doc.against_loan) {
             frappe.call({
@@ -118,7 +145,7 @@ frappe.ui.form.on("Loan Disbursement", {
                         let loan_amount = loan.loan_amount || 0;
                         let total_charges = 0;
 
-                        // ✅ Get company setting first
+                        // Get Company setting for charge deduction
                         frappe.call({
                             method: "frappe.client.get_value",
                             args: {
@@ -128,7 +155,7 @@ frappe.ui.form.on("Loan Disbursement", {
                             },
                             callback: function(cmp) {
                                 if (cmp.message && cmp.message.deduct_charges_in_loan_disbursement) {
-                                    // ✅ Deduct charges if enabled
+                                    // Deduct charges if enabled
                                     if (loan.loan_product) {
                                         frappe.call({
                                             method: "frappe.client.get",
@@ -147,6 +174,7 @@ frappe.ui.form.on("Loan Disbursement", {
                                                         }
                                                     });
 
+                                                    // Net amount after deducting charges
                                                     let net_amount = loan_amount - total_charges;
                                                     frm.set_value("disbursed_amount", net_amount);
                                                 }
@@ -154,7 +182,7 @@ frappe.ui.form.on("Loan Disbursement", {
                                         });
                                     }
                                 } else {
-                                    // ❌ No deduction → Disburse full loan amount
+                                    // If no deduction → Disburse full loan amount
                                     frm.set_value("disbursed_amount", loan_amount);
                                 }
                             }
@@ -165,9 +193,12 @@ frappe.ui.form.on("Loan Disbursement", {
         }
     },
 
-    // Check if holiday exists on selected repayment date
+    // --------------------------------------------------------
+    // On Repayment Start Date Selection
+    // Check if the selected date falls on a holiday
     // Developer: Rutuja Somvanshi
     // Date: 25-09-2025
+    // --------------------------------------------------------
     repayment_start_date: function(frm) {
         if (frm.doc.repayment_start_date && frm.doc.against_loan) {
             frappe.db.get_doc("Loan", frm.doc.against_loan).then(loan => {
@@ -179,7 +210,9 @@ frappe.ui.form.on("Loan Disbursement", {
                     },
                     callback: function(r) {
                         if (r.message && r.message.is_holiday) {
-                            frappe.throw(`The selected Repayment Start Date <b>${frm.doc.repayment_start_date}</b> is a Holiday in <b>${r.message.holiday_list}</b>. Please choose another date.`);
+                            frappe.throw(
+                                `The selected Repayment Start Date <b>${frm.doc.repayment_start_date}</b> is a Holiday in <b>${r.message.holiday_list}</b>. Please choose another date.`
+                            );
                         }
                     }
                 });
