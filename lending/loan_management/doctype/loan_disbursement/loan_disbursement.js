@@ -163,5 +163,27 @@ frappe.ui.form.on("Loan Disbursement", {
                 }
             });
         }
+    },
+
+    // Check if holiday exists on selected repayment date
+    // Developer: Rutuja Somvanshi
+    // Date: 25-09-2025
+    repayment_start_date: function(frm) {
+        if (frm.doc.repayment_start_date && frm.doc.against_loan) {
+            frappe.db.get_doc("Loan", frm.doc.against_loan).then(loan => {
+                frappe.call({
+                    method: "lending.api.cust_disbursement.check_if_holiday",
+                    args: {
+                        company: loan.company,
+                        repayment_date: frm.doc.repayment_start_date
+                    },
+                    callback: function(r) {
+                        if (r.message && r.message.is_holiday) {
+                            frappe.throw(`The selected Repayment Start Date <b>${frm.doc.repayment_start_date}</b> is a Holiday in <b>${r.message.holiday_list}</b>. Please choose another date.`);
+                        }
+                    }
+                });
+            });
+        }
     }
 });

@@ -38,6 +38,7 @@ from lending.loan_management.doctype.loan_security_release.loan_security_release
 from lending.loan_management.doctype.process_loan_interest_accrual.process_loan_interest_accrual import (
 	process_loan_interest_accrual_for_loans,
 )
+from lending.api.cust_disbursement import check_if_holiday
 
 
 # nosemgrep
@@ -99,6 +100,11 @@ class LoanDisbursement(AccountsController):
 			self.set_cyclic_date()
 
 		self.validate_repayment_start_date()
+
+		# Check if holiday exists on selected repayment date
+		# Developer: Rutuja Somvanshi
+		# Date: 25-09-2025
+		check_if_holiday(self.company, self.repayment_start_date, from_validate=True)
 
 	def on_update(self):
 		if self.is_term_loan:
