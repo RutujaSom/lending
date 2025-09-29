@@ -28,6 +28,7 @@ from lending.loan_management.doctype.loan_repayment_schedule.utils import (
 	get_monthly_repayment_amount,
 	set_demand,
 )
+from ex_loan_management.api.utils import get_paginated_data
 
 
 # nosemgrep
@@ -1248,3 +1249,110 @@ def bulk_update_repayment_dates(file_url):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Bulk Update Repayment Dates Error")
         return f"{str(e)}"
+
+
+
+
+update_fields = [
+    "name",
+    "loan",
+	"loan_disbursement",
+	"loan_amount",
+	"current_principal_amount",
+	"rate_of_interest",
+	"company",
+	"posting_date",
+	"repayment_frequency",
+	"repayment_start_date",
+	"maturity_date",
+	"repayment_days",
+	"total_installments_paid",
+	"total_installments_raised",
+	"total_installments_overdue",
+	"loan_product",
+	"repayment_method",
+	"repayment_periods",
+	"repayment_schedule_type",
+	"repayment_date_on",
+	"disbursed_amount",
+	"monthly_repayment_amount",
+	"partner_monthly_repayment_amount",
+	"loan_restructure",
+	"restructure_type",
+	"broken_period_interest",
+	"status",
+	"amended_from",
+	"moratorium_type",
+	"moratorium_tenure",
+	"treatment_of_interest",
+	"moratorium_end_date",
+	"adjusted_interest",
+	"broken_period_interest_days",
+]
+
+"""
+	Get Loan Repayment Schedule List (with optional pagination, search & sorting)
+"""
+@frappe.whitelist()
+def loan_payment_schedule_list(page=1, page_size=10, search=None, sort_by="loan", sort_order="asc", is_pagination=False,**kwargs):
+    is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into bool
+    extra_params = {"search": search} if search else {}
+    if "cmd" in kwargs:
+        del kwargs["cmd"]
+
+    # 🔹 Collect filters from kwargs (all query params except the defaults)
+    filters = {}
+    for k, v in kwargs.items():
+        if v not in [None, ""]:   # skip empty params
+            filters[k] = v
+
+    # 🔹 Handle loan_group filter (from Loan Member)
+    user = frappe.session.user
+    base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
+    print("base_url .....",base_url)
+    print("sort_by ..",sort_by,'sort_order ....',sort_order)
+    parent_data =  get_paginated_data(
+        doctype="Loan Repayment Schedule",
+        fields=update_fields,
+        filters=filters,   # ✅ Now includes applicant filter if loan_group provided
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=int(page),
+        page_size=int(page_size),
+        search_fields=["name"],
+        is_pagination=is_pagination,
+        base_url=base_url,
+        extra_params=extra_params,
+    )
+
+    parent_names = [doc["name"] for doc in parent_data.get("results", [])]
+    # Fetch all child rows for these parents at once
+    all_child_rows = frappe.get_all(
+        "Repayment Schedule",
+        filters={"parent": ["in", parent_names], "parenttype": "Loan Repayment Schedule"},
+        fields=[
+            "parent",
+            "payment_date",
+            "number_of_days",
+            "principal_amount",
+            "interest_amount",
+            "total_payment",
+            "balance_loan_amount",
+            "demand_generated",
+            "idx"
+        ],
+        order_by="parent, idx asc"
+    )
+    
+    # Group child rows by parent
+    children_map = {}
+    for row in all_child_rows:
+        children_map.setdefault(row["parent"], []).append(row)
+    
+    # Attach child rows to parents
+    for doc in parent_data.get("results", []):
+        doc["repayment_schedule"] = children_map.get(doc["name"], [])
+
+
+    return parent_data

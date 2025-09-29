@@ -39,7 +39,7 @@ from lending.loan_management.doctype.process_loan_interest_accrual.process_loan_
 	process_loan_interest_accrual_for_loans,
 )
 from lending.api.cust_disbursement import check_if_holiday
-
+from ex_loan_management.api.utils import get_paginated_data
 
 # nosemgrep
 class LoanDisbursement(AccountsController):
@@ -1061,3 +1061,82 @@ def import_and_submit_disbursement(file_url):
             errors.append({"row": dict(row), "error": str(e)})
 
     return f"success_count: {len(success)}, error_count: {len(errors)}"
+
+
+
+
+
+update_fields = [
+    "name",
+    "against_loan",
+	"sanctioned_loan_amount",
+	"current_disbursed_amount",
+	"posting_date",
+	"applicant_type",
+	"loan_product",
+	"monthly_repayment_amount",
+	"loan_partner",
+	"company",
+	"applicant",
+	"repayment_schedule_type",
+	"repayment_frequency",
+	"repayment_method",
+	"tenure",
+	"repayment_start_date",
+	"is_term_loan",
+	"withhold_security_deposit",
+	"repayment_days",
+	"disbursement_date",
+	"clearance_date",
+	"bpi_difference_date",
+	"broken_period_interest_days",
+	"disbursed_amount",
+	"broken_period_interest",
+	"bpi_amount_difference",
+	"principal_amount_paid",
+	"mode_of_payment",
+	"disbursement_account",
+	"refund_account",
+	"loan_account",
+	"bank_account",
+	"cost_center",
+	"reference_date",
+	"days_past_due",
+	"status",
+	"reference_number",
+	"amended_from",
+]
+
+"""
+	Get Loan Disbursement List (with optional pagination, search & sorting)
+"""
+@frappe.whitelist()
+def loan_disbursement_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False,**kwargs):
+    is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into bool
+    extra_params = {"search": search} if search else {}
+    if "cmd" in kwargs:
+        del kwargs["cmd"]
+
+    # 🔹 Collect filters from kwargs (all query params except the defaults)
+    filters = {}
+    for k, v in kwargs.items():
+        if v not in [None, ""]:   # skip empty params
+            filters[k] = v
+
+    base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
+    parent_data =  get_paginated_data(
+        doctype="Loan Disbursement",
+        fields=update_fields,
+        filters=filters,   # ✅ Now includes applicant filter if loan_group provided
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=int(page),
+        page_size=int(page_size),
+        search_fields=["name"],
+        is_pagination=is_pagination,
+        base_url=base_url,
+        extra_params=extra_params,
+    )
+
+    return parent_data

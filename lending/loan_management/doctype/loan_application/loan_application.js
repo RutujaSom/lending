@@ -153,11 +153,10 @@ frappe.ui.form.on("Proposed Pledge", {
 
 frappe.ui.form.on('Loan Application', {
     refresh(frm) {
-        if (!frm.is_new()) {
-            frm.add_custom_button('Import Loan Application', () => {
-                open_import_dialog(frm);
-            });
-        }
+        frm.add_custom_button('Import Loan Application', () => {
+			open_import_dialog(frm);
+		});
+        
     }
 });
 
