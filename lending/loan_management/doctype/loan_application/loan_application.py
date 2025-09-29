@@ -439,6 +439,7 @@ def has_permission(doc, user):
 
 @frappe.whitelist()
 def bulk_import_loan_applications(file_url):
+    print("in import appl")
     # Get File doc
     file_doc = frappe.get_doc("File", {"file_url": file_url})
     file_path = file_doc.get_full_path()   # full path to file in sites/private/files/ or sites/{sitename}/public/files/
@@ -448,6 +449,7 @@ def bulk_import_loan_applications(file_url):
         df = pd.read_csv(file_path)
     else:
         df = pd.read_excel(file_path)
+        df = df.fillna("")
 
     print('file_path ...', file_path, 'df ....', df)
 
@@ -459,7 +461,7 @@ def bulk_import_loan_applications(file_url):
         try:
             nominee_name = row.get("NOMINEE FULL NAME")
             relation = str(row.get("RELATIONSHIP OF NOMINEE WITH BORROWER")).title()
-
+            print("relation ....",relation)
             # print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
             # --- Get Loan Product ---
             loan_product = frappe.get_value("Loan Product", {"rate_of_interest": row.get("ROI")}, "name")
@@ -504,14 +506,15 @@ def bulk_import_loan_applications(file_url):
                 "rate_of_interest": row.get("ROI"),
                 "posting_date": loan_date,
 				"status":"Approved",
+                # "workflow_state": "Approved", 
                 "nominee":nominee_details,
                 "nominee_relation":relation
             }
 
             loan_doc = frappe.get_doc(loan_data)
             loan_doc.insert()
+            loan_doc.db_set("workflow_state", "Approved", update_modified=False)
             loan_doc.submit()
-            print('loan_doc ....',loan_doc)
 
             success.append(loan_doc.name)
 

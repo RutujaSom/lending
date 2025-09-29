@@ -323,12 +323,11 @@ frappe.ui.form.on('Loan', {
 
 frappe.ui.form.on('Loan', {
     refresh(frm) {
-        if (!frm.is_new()) {
-            frm.add_custom_button('Import Loan', () => {
-                open_import_dialog(frm);
-            });
-        }
-    }
+	frm.add_custom_button('Import Loan', () => {
+			open_import_dialog(frm);
+		});
+	}
+    
 });
 
 
