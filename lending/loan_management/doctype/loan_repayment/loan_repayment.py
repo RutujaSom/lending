@@ -3573,3 +3573,31 @@ def create_loan_repayment():
         return api_error(e)
 
 
+
+
+@frappe.whitelist()
+def loan_repayment_get(name):
+    """
+    Get Loan Repayment by name (primary key)
+    Returns linked Loan Group name and full URLs for image fields
+    """
+    if not name:
+        frappe.throw("Loan Repayment name is required")
+
+    # Fetch Loan Member
+    repayments = frappe.get_all(
+        "Loan Repayment",
+        filters={"name": name},
+        fields=update_fields
+    )
+
+    if not repayments:
+        return {}
+
+    repayment = repayments[0]
+    if repayment.get("applicant"):
+        member_doc = frappe.get_value("Loan Member", repayment["applicant"], "member_name")
+        repayment["applicant"] = member_doc or ""
+
+
+    return repayment

@@ -787,3 +787,28 @@ def get_loan_members_for_user(doctype, txt, searchfield, start, page_len, filter
         ORDER BY member_name ASC
         LIMIT %s OFFSET %s
     """, (f"%{txt}%", page_len, start))
+
+
+
+@frappe.whitelist()
+def loan_application_get(name):
+    """
+    Get Loan Application by name (primary key)
+    Returns linked Loan Group name and full URLs for image fields
+    """
+    if not name:
+        frappe.throw("Loan Application name is required")
+
+    # Fetch Loan Member
+    applications = frappe.get_all(
+        "Loan Application",
+        filters={"name": name},
+        fields=update_fields
+    )
+
+    if not applications:
+        return {}
+
+    application = applications[0]
+
+    return application
