@@ -193,7 +193,7 @@ class LoanRepayment(AccountsController):
 			if self.mode_of_payment == "Cash":
 				# check if logged-in user has Agent or Employee role
 				roles = frappe.get_roles(frappe.session.user)
-				if "Agent" in roles or "Employee" in roles:
+				if ("Agent" in roles or "Employee" in roles) and "Administrator" not in roles:
 			
 					# Create new record in Collection In Hand
 					collection = frappe.get_doc({
@@ -3521,18 +3521,22 @@ def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_
 
 
 import frappe
+from frappe.utils.file_manager import save_file
 
 @frappe.whitelist()
 def create_loan_repayment():
     try:
         data = frappe.form_dict  # works for JSON body and form-data
         user_doc = frappe.get_doc("User", frappe.session.user)
+        files = frappe.request.files 
         print('user_doc ......',user_doc)
         try:
             emp_details = frappe.get_doc("Employee", {"user_id": user_doc.name})
             company = emp_details.company
         except:
             company = ""
+
+        print('data.get("amount_paid") ///',data.get("amount_paid"), type(data.get("amount_paid")))
 
         # Step 1: Prepare Loan Application doc
         doc = frappe.get_doc({
@@ -3545,7 +3549,7 @@ def create_loan_repayment():
             "company": company,
             "loan_product": data.get("loan_product"),
             "value_date": data.get("value_date"),
-            "amount_paid": data.get("amount_paid"),
+            "amount_paid": float(data.get("amount_paid")),
 			"mode_of_payment":data.get("mode_of_payment"),
             "reference_number": data.get("reference_number"),
             "manual_remarks": data.get("manual_remarks"),
@@ -3554,7 +3558,19 @@ def create_loan_repayment():
 			"repayment_schedule_type":"Monthly as per repayment start date"
         })
 
-        
+        if "payment_proof" in files:
+            upload = files.get("payment_proof")
+            if upload or upload.filename:
+                file_doc = save_file(
+					fname=upload.filename,
+					content=upload.stream.read(),
+					dt="Loan Member",
+					# dn=doc.name,
+					dn=1,
+					is_private=1
+				)
+                doc.set("payment_proof", file_doc.file_url)
+
         # Step 3: Insert Loan Application (runs validate() automatically)
         doc.insert(ignore_permissions=True)
         doc.submit()
