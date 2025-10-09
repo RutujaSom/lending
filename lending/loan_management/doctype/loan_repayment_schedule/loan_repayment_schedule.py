@@ -1326,7 +1326,14 @@ def loan_payment_schedule_list(page=1, page_size=10, search=None, sort_by="loan"
         extra_params=extra_params,
     )
 
-    parent_names = [doc["name"] for doc in parent_data.get("results", [])]
+    if isinstance(parent_data, dict):
+        parent_results = parent_data.get("results", [])
+    else:
+        parent_results = parent_data
+
+    parent_names = [doc["name"] for doc in parent_results]
+
+
     # Fetch all child rows for these parents at once
     all_child_rows = frappe.get_all(
         "Repayment Schedule",
@@ -1351,7 +1358,7 @@ def loan_payment_schedule_list(page=1, page_size=10, search=None, sort_by="loan"
         children_map.setdefault(row["parent"], []).append(row)
     
     # Attach child rows to parents
-    for doc in parent_data.get("results", []):
+    for doc in parent_results:
         doc["repayment_schedule"] = children_map.get(doc["name"], [])
 
 
