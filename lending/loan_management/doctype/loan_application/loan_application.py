@@ -645,7 +645,11 @@ update_fields = [
 	"repayment_periods",
 	"repayment_amount",
 	"total_payable_interest",
-	"amended_from"
+	"amended_from",
+    
+    "nominee",
+    "nominee_relation",
+    "is_secured_loan",
 ]
 
 """
@@ -731,7 +735,7 @@ def loan_application_list(page=1, page_size=10, search=None, sort_by="name", sor
         is_pagination=is_pagination,
         base_url=base_url,
         extra_params=extra_params,
-        # link_fields={"applicant": "member_name"},  # 👈 you can also expand Loan Member fields if needed
+        link_fields={"nominee": "member_name","co_borrower": "member_name"},  # 👈 you can also expand Loan Member fields if needed
     )
 
 
