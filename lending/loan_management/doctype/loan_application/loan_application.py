@@ -47,6 +47,7 @@ class LoanApplication(Document):
         is_secured_loan: DF.Check
         is_term_loan: DF.Check
         loan_amount: DF.Currency
+        loan_group: DF.Data | None
         loan_product: DF.Link
         maximum_loan_amount: DF.Currency
         nominee: DF.Link
@@ -457,12 +458,12 @@ def bulk_import_loan_applications(file_url):
     errors = []
 
     for idx, row in df.iterrows():
-        # print('row ....', row)
+        print('row ....', row)
         try:
             nominee_name = row.get("NOMINEE FULL NAME")
             relation = str(row.get("RELATIONSHIP OF NOMINEE WITH BORROWER")).title()
             print("relation ....",relation)
-            # print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
+            print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
             # --- Get Loan Product ---
             loan_product = frappe.get_value("Loan Product", {"rate_of_interest": row.get("ROI")}, "name")
             if not loan_product:

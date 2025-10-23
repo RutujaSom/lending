@@ -109,6 +109,17 @@ after_install = "lending.install.after_install"
 # ------------
 
 before_uninstall = "lending.install.before_uninstall"
+
+fixtures = ["Workflow", "Workflow State", "Workflow Action Master",
+    {
+        "dt": "Server Script",
+        "filters": [
+            ["name", "in", [
+                "Get Loan Group Data For Application",
+            ]]
+        ]
+    }
+]
 # after_uninstall = "lending.uninstall.after_uninstall"
 
 # Desk Notifications

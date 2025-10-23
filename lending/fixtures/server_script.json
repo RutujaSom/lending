@@ -1,0 +1,21 @@
+[
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "After Save",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2025-10-23 15:08:17.699816",
+  "module": null,
+  "name": "Get Loan Group Data For Application",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Loan Application",
+  "script": "if doc.applicant:  # or self.loan_member_application\n    # Fetch the Loan Group from the Loan Member\n    loan_member_doc = frappe.get_doc(\"Loan Member\", doc.applicant)\n    # loan_group_name = loan_member_doc.group  # This is the Link field in Loan Member\n    if loan_member_doc.group:  # assuming 'group' is Link field in Loan Member\n        loan_group_doc = frappe.get_doc(\"Loan Group\", loan_member_doc.group)\n\n        # Set it in Loan Application (if you have a field to store it)\n        doc.db_set(\"loan_group\", loan_group_doc.group_name)  # make sure field exists in Loan Application\n",
+  "script_type": "DocType Event"
+ }
+]
