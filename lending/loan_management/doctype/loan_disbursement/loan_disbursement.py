@@ -1111,7 +1111,7 @@ update_fields = [
 	Get Loan Disbursement List (with optional pagination, search & sorting)
 """
 @frappe.whitelist()
-def loan_disbursement_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False,**kwargs):
+def loan_disbursement_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc",loan_group=None, is_pagination=False,**kwargs):
     is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into bool
     extra_params = {"search": search} if search else {}
     if "cmd" in kwargs:
@@ -1122,6 +1122,58 @@ def loan_disbursement_list(page=1, page_size=10, search=None, sort_by="name", so
     for k, v in kwargs.items():
         if v not in [None, ""]:   # skip empty params
             filters[k] = v
+
+	# 🔹 Handle loan_group filter (from Loan Member)
+    user = frappe.session.user
+    if "Agent" in frappe.get_roles(user):
+        employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee_id:
+            return None  # No employee mapped
+
+        # Fetch loan groups assigned to this employee
+        groups = frappe.get_all(
+            "Loan Group Assignment",
+            filters={"employee": employee_id},
+            pluck="loan_group"
+        )
+
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # 🔹 If agent selects a group → filter only that group
+        if loan_group:
+            groups = [loan_group] if loan_group in groups else []
+
+        # If no valid group remains → no records
+        if not groups:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+
+        # Fetch Loan Members belonging to allowed groups
+        member_ids = frappe.get_all(
+            "Loan Member",
+            filters={"group": ["in", groups]},
+            pluck="name"
+        )
+
+        if member_ids:
+            filters["applicant"] = ["in", member_ids]
+        else:
+            return {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
 
     base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
     parent_data =  get_paginated_data(
