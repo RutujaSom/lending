@@ -3432,6 +3432,7 @@ update_fields = [
 	"excess_amount",
 	"manual_remarks",
 	"payment_account",
+	"workflow_state",
 ]
 
 """
@@ -3581,7 +3582,7 @@ def create_loan_repayment():
 
         # Step 3: Insert Loan Application (runs validate() automatically)
         doc.insert(ignore_permissions=True)
-        doc.submit()
+        new_doc = apply_workflow(doc, "Submit for verification")
         frappe.db.commit()
 
 
@@ -3597,7 +3598,7 @@ def create_loan_repayment():
         return api_error(e)
 
 
-
+from frappe.model.workflow import apply_workflow
 
 @frappe.whitelist()
 def loan_repayment_get(name):
