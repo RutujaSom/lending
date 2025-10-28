@@ -79,6 +79,7 @@ class LoanRepayment(AccountsController):
 		payable_charges: DF.Table[LoanRepaymentCharges]
 		payable_principal_amount: DF.Currency
 		payment_account: DF.Link | None
+		payment_proof: DF.Attach | None
 		penalty_amount: DF.Currency
 		penalty_income_account: DF.Link | None
 		pending_principal_amount: DF.Currency
@@ -168,6 +169,11 @@ class LoanRepayment(AccountsController):
 				)
 
 	def on_submit(self):
+		print("self.workflow_state .......",self.workflow_state)
+		if self.workflow_state == "Rejected":
+			frappe.msgprint("This repayment has been rejected. No further processing will occur.")
+			return
+		
 		from lending.loan_management.doctype.loan_demand.loan_demand import reverse_demands
 		from lending.loan_management.doctype.loan_disbursement.loan_disbursement import (
 			make_sales_invoice_for_charge,
@@ -187,6 +193,8 @@ class LoanRepayment(AccountsController):
 		from lending.loan_management.doctype.process_loan_interest_accrual.process_loan_interest_accrual import (
 			process_loan_interest_accrual_for_loans,
 		)
+
+		print("in submit ......",)
 
 		# Ensure amount field exists in Loan Repayment
 		if self.amount_paid:
