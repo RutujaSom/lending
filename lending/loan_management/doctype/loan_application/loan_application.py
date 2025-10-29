@@ -50,7 +50,7 @@ class LoanApplication(Document):
         loan_group: DF.Data | None
         loan_product: DF.Link
         maximum_loan_amount: DF.Currency
-        nominee: DF.Link
+        nominee: DF.Link | None
         nominee_relation: DF.Literal["Spouse", "Mother", "Father", "Son", "Daughter", "Sister", "Brother", "Husband", "Wife", "Friend", "Other"]
         posting_date: DF.Date | None
         proposed_pledges: DF.Table[ProposedPledge]
@@ -458,9 +458,9 @@ def bulk_import_loan_applications(file_url):
     errors = []
 
     for idx, row in df.iterrows():
-        print('row ....', row)
+        # print('row ....', row)
         try:
-            nominee_name = row.get("NOMINEE FULL NAME")
+            nominee_name = str(row.get("NOMINEE FULL NAME")).strip()
             relation = str(row.get("RELATIONSHIP OF NOMINEE WITH BORROWER")).title()
             print("relation ....",relation)
             print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
@@ -473,11 +473,11 @@ def bulk_import_loan_applications(file_url):
             print('row.get("MEMBER NO") ...',row.get("MEMBER NO"))
             applicant = frappe.get_value("Loan Member", {"member_id": row.get("MEMBER NO")}, "name")
             if not applicant:
-                raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
+                raise Exception(f"eee....Applicant '{row.get('MEMBER NO')}' not found")
             
             nominee_details = frappe.get_value("Loan Member", {"member_name": nominee_name}, "name")
-            if not nominee_details:
-                raise Exception(f"Applicant '{nominee_name}' not found")
+            # if not nominee_details:
+            #     raise Exception(f"nominee_details '{nominee_name}' not found")
 
             # --- Parse Date ---
             loan_date = row.get("LOAN SANCTION DATE/ trasancation date")
