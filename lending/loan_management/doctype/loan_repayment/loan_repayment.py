@@ -169,7 +169,7 @@ class LoanRepayment(AccountsController):
 				)
 
 	def on_submit(self):
-		print("self.workflow_state .......",self.workflow_state)
+		# print("self.workflow_state .......",self.workflow_state)
 		if self.workflow_state == "Rejected":
 			frappe.msgprint("This repayment has been rejected. No further processing will occur.")
 			return
@@ -1391,6 +1391,7 @@ class LoanRepayment(AccountsController):
 			query.run()
 
 	def update_demands(self, cancel=0):
+		print("in update update_demands..............")
 		loan_demand = frappe.qb.DocType("Loan Demand")
 		for payment in self.repayment_details:
 			paid_amount = payment.paid_amount
@@ -1824,6 +1825,7 @@ class LoanRepayment(AccountsController):
 		return pending_amount
 
 	def adjust_component(self, amount_to_adjust, demand_type, demands, demand_subtype=None):
+		print('adjust_component ..............',amount_to_adjust)
 		partner_share = 0
 		precision = cint(frappe.db.get_default("currency_precision")) or 2
 
@@ -3576,7 +3578,7 @@ def create_loan_repayment():
 					dt="Loan Member",
 					# dn=doc.name,
 					dn=1,
-					is_private=1
+					is_private=0
 				)
                 doc.set("payment_proof", file_doc.file_url)
 
