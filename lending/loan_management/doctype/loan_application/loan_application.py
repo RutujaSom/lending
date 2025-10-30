@@ -743,28 +743,28 @@ def loan_application_list(page=1, page_size=10, search=None, sort_by="name", sor
 
 
 
-
-
 @frappe.whitelist()
 def get_loan_members_for_user(doctype, txt, searchfield, start, page_len, filters):
     user = frappe.session.user
+
+    # Always prefer searching by member_name
+    search_field = "member_name"
+    print(f"Search on field: {search_field}, txt: {txt}")
 
     if user == "Administrator":
         return frappe.db.sql(f"""
             SELECT name, member_name
             FROM `tabLoan Member`
-            WHERE {searchfield} LIKE %s
+            WHERE `{search_field}` LIKE %s
             ORDER BY member_name ASC
             LIMIT %s OFFSET %s
         """, (f"%{txt}%", page_len, start))
 
     if "Agent" in frappe.get_roles(user):
-        # Get employee id
         employee_id = frappe.db.get_value("Employee", {"user_id": user}, "name")
         if not employee_id:
             return []
 
-        # Get loan groups for this employee
         groups = frappe.get_all(
             "Loan Group Assignment",
             filters={"employee": employee_id},
@@ -773,22 +773,23 @@ def get_loan_members_for_user(doctype, txt, searchfield, start, page_len, filter
         if not groups:
             return []
 
-        groups_str = "', '".join(groups)
-
-        return frappe.db.sql(f"""
+        # Use safe placeholders instead of string join
+        placeholders = ", ".join(["%s"] * len(groups))
+        query = f"""
             SELECT name, member_name
             FROM `tabLoan Member`
-            WHERE `group` IN ('{groups_str}')
-            AND {searchfield} LIKE %s
+            WHERE `group` IN ({placeholders})
+            AND `{search_field}` LIKE %s
             ORDER BY member_name ASC
             LIMIT %s OFFSET %s
-        """, (f"%{txt}%", page_len, start))
+        """
+        return frappe.db.sql(query, (*groups, f"%{txt}%", page_len, start))
 
-    # default → no restriction
+    # Default for other users
     return frappe.db.sql(f"""
         SELECT name, member_name
         FROM `tabLoan Member`
-        WHERE {searchfield} LIKE %s
+        WHERE `{search_field}` LIKE %s
         ORDER BY member_name ASC
         LIMIT %s OFFSET %s
     """, (f"%{txt}%", page_len, start))
