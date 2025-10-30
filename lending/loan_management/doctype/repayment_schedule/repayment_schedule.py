@@ -130,14 +130,13 @@ def get_todays_emis(
             ON (l.applicant_type = 'Loan Member' AND l.applicant = lm.name)
         LEFT JOIN `tabLoan Repayment` lr 
             ON lr.against_loan = lrs.loan 
-            AND DATE(lr.posting_date) = rs.payment_date
+            AND DATE(lr.value_date) = rs.payment_date 
             AND lr.docstatus = 1
         {conditions}
         GROUP BY rs.name
         HAVING COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment
         ORDER BY {sort_by} {sort_order}
     """
-
 
     emis = frappe.db.sql(query, tuple(params), as_dict=True)
     return emis
