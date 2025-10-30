@@ -170,9 +170,9 @@ class LoanRepayment(AccountsController):
 
 	def on_submit(self):
 		# print("self.workflow_state .......",self.workflow_state)
-		# if self.workflow_state == "Rejected":
-		# 	frappe.msgprint("This repayment has been rejected. No further processing will occur.")
-		# 	return
+		if self.workflow_state == "Rejected":
+			frappe.msgprint("This repayment has been rejected. No further processing will occur.")
+			return
 		
 		from lending.loan_management.doctype.loan_demand.loan_demand import reverse_demands
 		from lending.loan_management.doctype.loan_disbursement.loan_disbursement import (
