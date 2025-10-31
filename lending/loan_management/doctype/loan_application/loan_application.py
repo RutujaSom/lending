@@ -646,7 +646,7 @@ update_fields = [
 	"repayment_amount",
 	"total_payable_interest",
 	"amended_from",
-    
+    "workflow_state",
     "nominee",
     "nominee_relation",
     "is_secured_loan",
