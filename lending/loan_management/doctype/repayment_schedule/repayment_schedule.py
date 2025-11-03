@@ -113,6 +113,8 @@ def get_todays_emis(
             l.applicant,
             lm.member_name,
             lm.group,
+            lm.mobile_no,
+            lm.mobile_no_2,
             COALESCE(SUM(lr.amount_paid), 0) as amount_paid,
             CASE 
                 WHEN COALESCE(SUM(lr.amount_paid), 0) >= rs.total_payment THEN 'Done ✅'
