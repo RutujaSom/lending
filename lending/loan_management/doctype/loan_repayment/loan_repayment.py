@@ -169,7 +169,6 @@ class LoanRepayment(AccountsController):
 				)
 
 	def on_submit(self):
-		# print("self.workflow_state .......",self.workflow_state)
 		if self.workflow_state == "Rejected":
 			frappe.msgprint("This repayment has been rejected. No further processing will occur.")
 			return
@@ -194,7 +193,6 @@ class LoanRepayment(AccountsController):
 			process_loan_interest_accrual_for_loans,
 		)
 
-		print("in submit ......",)
 
 		# Ensure amount field exists in Loan Repayment
 		if self.amount_paid:
@@ -1391,7 +1389,6 @@ class LoanRepayment(AccountsController):
 			query.run()
 
 	def update_demands(self, cancel=0):
-		print("in update update_demands..............")
 		loan_demand = frappe.qb.DocType("Loan Demand")
 		for payment in self.repayment_details:
 			paid_amount = payment.paid_amount
@@ -1405,7 +1402,6 @@ class LoanRepayment(AccountsController):
 				paid_amount_field = "waived_amount"
 			else:
 				paid_amount_field = "paid_amount"
-
 			frappe.qb.update(loan_demand).set(
 				loan_demand[paid_amount_field], loan_demand[paid_amount_field] + paid_amount
 			).set(
@@ -1825,7 +1821,6 @@ class LoanRepayment(AccountsController):
 		return pending_amount
 
 	def adjust_component(self, amount_to_adjust, demand_type, demands, demand_subtype=None):
-		print('adjust_component ..............',amount_to_adjust)
 		partner_share = 0
 		precision = cint(frappe.db.get_default("currency_precision")) or 2
 
@@ -2418,6 +2413,7 @@ def get_unpaid_demands(
 		.orderby(loan_demand.demand_type)
 		.orderby(loan_demand.creation)
 	)
+	print('query ....',query)
 
 	if demand_subtype == "Charges":
 		query = query.orderby(loan_demand.invoice_date)
@@ -2458,7 +2454,6 @@ def get_unpaid_demands(
 
 	if for_update:
 		query = query.for_update()
-
 	loan_demands = query.run(as_dict=1)
 
 	return loan_demands
@@ -2552,7 +2547,6 @@ def get_amounts(
 	for_update=False,
 ):
 	demand_type, demand_subtype = get_demand_type(payment_type)
-
 	against_loan_doc = frappe.get_doc("Loan", against_loan, for_update=for_update)
 	unpaid_demands = get_unpaid_demands(
 		against_loan_doc.name,
@@ -2843,6 +2837,7 @@ def calculate_amounts(
 				+ amounts["penalty_amount"]
 				+ amounts.get("total_charges_payable", 0)
 			)
+
 		if with_loan_details:
 			return {"amounts": amounts, "loan_details": loan_details}
 		else:
@@ -3297,11 +3292,9 @@ def bulk_import_loan_repayments(file_url):
 
                 # Only process if received_date exists
                 if received_date and str(received_date).upper() not in ["NIL", "NONE", "NULL","NAN"]:
-                    print('in if .......')
                     try:
                         # --- 2. Create Interest Accrual ---
                         accrual = frappe.new_doc("Process Loan Interest Accrual")
-                        # print('accrual ....',accrual)
                         accrual.loan = loan.name
                         accrual.company = "Excellminds (Demo)"
                         accrual.posting_date = posting_date
@@ -3517,11 +3510,12 @@ def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_
         sort_order=sort_order,
         page=int(page),
         page_size=int(page_size),
-        search_fields=["applicant_name"],
+        search_fields=["applicant"],
         is_pagination=is_pagination,
         base_url=base_url,
         extra_params=extra_params,
         link_fields={"applicant": "member_name"},
+		link_images_fields={"applicant": "member_image"} 
     )
 
 
@@ -3623,8 +3617,12 @@ def loan_repayment_get(name):
 
     repayment = repayments[0]
     if repayment.get("applicant"):
-        member_doc = frappe.get_value("Loan Member", repayment["applicant"], "member_name")
-        repayment["applicant"] = member_doc or ""
+        member_doc = frappe.get_value("Loan Member", repayment["applicant"], 
+									  ["member_name","member_image"], as_dict=True)
+        repayment["applicant_name"] = member_doc.get("member_name", "")
+        host_url = frappe.request.host_url.rstrip("/")  # e.g. http://127.0.0.1:8000
+        
+        repayment["applicant_image"] = f"{host_url}{member_doc['member_image']}" if member_doc.get("member_image") else ""
 
 
     return repayment
