@@ -935,7 +935,9 @@ def bulk_import_loan_disbursement(file_url):
             # --- Find Loan Application ---
             loan_name = frappe.get_doc("Loan", {"loan_id": row.get("LOAN ID")})
             if not loan_name:
-                raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+                # raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+                print(f"Loan '{row.get('AGAINST LOAN')}' not found")
+                continue
             print('loan_name .....',loan_name)
 
             # --- Parse Dates ---
@@ -1021,7 +1023,9 @@ def import_and_submit_disbursement(file_url):
 			# --- Find Loan Application ---
             loan_name = frappe.get_doc("Loan", {"loan_id": row.get("LOAN ID")})
             if not loan_name:
-                raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+                # raise Exception(f"Loan '{row.get('AGAINST LOAN')}' not found")
+                print(f"Loan '{row.get('AGAINST LOAN')}' not found")
+                continue
             print('loan_name .....',loan_name)
 
 
@@ -1046,6 +1050,7 @@ def import_and_submit_disbursement(file_url):
 
             # --- Load and Submit ---
             disb_doc = frappe.get_doc("Loan Disbursement", disb_name)
+            disb_doc.save()
             disb_doc.submit()
 
             success.append({
@@ -1189,7 +1194,8 @@ def loan_disbursement_list(page=1, page_size=10, search=None, sort_by="name", so
         is_pagination=is_pagination,
         base_url=base_url,
         extra_params=extra_params,
-		link_fields ={"applicant":"member_name"}
+		link_fields ={"applicant":"member_name"},
+		link_images_fields={"applicant": "member_image"},
     )
 
     return parent_data
