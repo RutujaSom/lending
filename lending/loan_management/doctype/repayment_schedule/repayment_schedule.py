@@ -99,6 +99,8 @@ def get_todays_emis(
                     params.append(tuple(assigned_groups))
                 else:
                     return []
+                
+    host_url = frappe.request.host_url.rstrip("/")
 
     query = f"""
         SELECT 
@@ -115,6 +117,7 @@ def get_todays_emis(
             lm.group,
             lm.mobile_no,
             lm.mobile_no_2,
+            CONCAT('{host_url}', lm.member_image) as member_image,
             COALESCE(SUM(lr.amount_paid), 0) as amount_paid,
             CASE 
                 WHEN COALESCE(SUM(lr.amount_paid), 0) >= rs.total_payment THEN 'Done ✅'
