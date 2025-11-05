@@ -169,7 +169,6 @@ class LoanRepayment(AccountsController):
 				)
 
 	def on_submit(self):
-		# print("self.workflow_state .......",self.workflow_state)
 		if self.workflow_state == "Rejected":
 			frappe.msgprint("This repayment has been rejected. No further processing will occur.")
 			return
@@ -194,7 +193,6 @@ class LoanRepayment(AccountsController):
 			process_loan_interest_accrual_for_loans,
 		)
 
-		print("in submit ......",)
 
 		# Ensure amount field exists in Loan Repayment
 		if self.amount_paid:
@@ -274,7 +272,6 @@ class LoanRepayment(AccountsController):
 
 		self.update_paid_amounts()
 		self.handle_auto_demand_write_off()
-		print("befor update_demands ....//////")
 		self.update_demands()
 		self.update_security_deposit_amount()
 		update_installment_counts(self.against_loan, loan_disbursement=self.loan_disbursement)
@@ -1392,10 +1389,8 @@ class LoanRepayment(AccountsController):
 			query.run()
 
 	def update_demands(self, cancel=0):
-		print("in update update_demands..............",self.repayment_details)
 		loan_demand = frappe.qb.DocType("Loan Demand")
 		for payment in self.repayment_details:
-			print("payment ...........",payment)
 			paid_amount = payment.paid_amount
 			partner_share = flt(payment.partner_share)
 
@@ -1407,7 +1402,6 @@ class LoanRepayment(AccountsController):
 				paid_amount_field = "waived_amount"
 			else:
 				paid_amount_field = "paid_amount"
-			print("paid_amount_field ...............",paid_amount_field)
 			frappe.qb.update(loan_demand).set(
 				loan_demand[paid_amount_field], loan_demand[paid_amount_field] + paid_amount
 			).set(
@@ -1827,7 +1821,6 @@ class LoanRepayment(AccountsController):
 		return pending_amount
 
 	def adjust_component(self, amount_to_adjust, demand_type, demands, demand_subtype=None):
-		print('adjust_component ..............',amount_to_adjust)
 		partner_share = 0
 		precision = cint(frappe.db.get_default("currency_precision")) or 2
 
@@ -2461,7 +2454,6 @@ def get_unpaid_demands(
 
 	if for_update:
 		query = query.for_update()
-	# print("loan_demands ......",loan_demands)
 	loan_demands = query.run(as_dict=1)
 
 	return loan_demands
@@ -2555,7 +2547,6 @@ def get_amounts(
 	for_update=False,
 ):
 	demand_type, demand_subtype = get_demand_type(payment_type)
-	print("against_loan ....",against_loan)
 	against_loan_doc = frappe.get_doc("Loan", against_loan, for_update=for_update)
 	unpaid_demands = get_unpaid_demands(
 		against_loan_doc.name,
@@ -2607,7 +2598,7 @@ def process_amount_for_loan(
 
 	if latest_accrual_date and getdate(latest_accrual_date) > getdate(posting_date):
 		is_backdated = 1
-	print("demands .....",demands)
+
 	for demand in demands:
 		if demand.demand_subtype == "Interest":
 			total_pending_interest += demand.outstanding_amount
@@ -2643,7 +2634,7 @@ def process_amount_for_loan(
 			is_future_accrual=1,
 			loan_disbursement=loan_disbursement,
 		)
-	print("payable_principal_amount .............",payable_principal_amount)
+
 	amounts["total_charges_payable"] = charges
 	amounts["pending_principal_amount"] = flt(pending_principal_amount, precision)
 	amounts["payable_principal_amount"] = flt(payable_principal_amount, precision)
@@ -2792,7 +2783,6 @@ def calculate_amounts(
 ):
 	try:
 		amounts = init_amounts()
-		print("with_loan_details ..........",with_loan_details)
 
 		if with_loan_details:
 			amounts, loan_details = get_amounts(
@@ -2847,7 +2837,7 @@ def calculate_amounts(
 				+ amounts["penalty_amount"]
 				+ amounts.get("total_charges_payable", 0)
 			)
-		print("amounts ..........",amounts)
+
 		if with_loan_details:
 			return {"amounts": amounts, "loan_details": loan_details}
 		else:
@@ -3302,11 +3292,9 @@ def bulk_import_loan_repayments(file_url):
 
                 # Only process if received_date exists
                 if received_date and str(received_date).upper() not in ["NIL", "NONE", "NULL","NAN"]:
-                    print('in if .......')
                     try:
                         # --- 2. Create Interest Accrual ---
                         accrual = frappe.new_doc("Process Loan Interest Accrual")
-                        # print('accrual ....',accrual)
                         accrual.loan = loan.name
                         accrual.company = "Excellminds (Demo)"
                         accrual.posting_date = posting_date
@@ -3631,7 +3619,6 @@ def loan_repayment_get(name):
     if repayment.get("applicant"):
         member_doc = frappe.get_value("Loan Member", repayment["applicant"], 
 									  ["member_name","member_image"], as_dict=True)
-        print("member_doc ....",member_doc)
         repayment["applicant_name"] = member_doc.get("member_name", "")
         host_url = frappe.request.host_url.rstrip("/")  # e.g. http://127.0.0.1:8000
         
