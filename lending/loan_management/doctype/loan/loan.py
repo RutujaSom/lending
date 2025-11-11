@@ -77,7 +77,7 @@ class Loan(AccountsController):
 		loan_application: DF.Link | None
 		loan_category: DF.Link | None
 		loan_charges: DF.Table[LoanDisbursementCharge]
-		loan_id: DF.Data
+		loan_id: DF.Data | None
 		loan_partner: DF.Link | None
 		loan_product: DF.Link
 		loan_restructure_count: DF.Int
@@ -434,6 +434,31 @@ class Loan(AccountsController):
 			):
 				doc = frappe.get_doc("Loan Security Assignment", assignment.name)
 				doc.cancel()
+	
+	def before_save(self):
+		import re
+		prefix = "GL"
+
+		# Fetch latest member_id (not name)
+		last_record = frappe.db.get_all(
+			"Loan",
+			filters={"loan_id": ["like", f"{prefix}%"]},
+			fields=["loan_id"],
+			order_by="loan_id desc",
+			limit=1
+		)
+		if last_record:
+			last_id = last_record[0].loan_id
+			match = re.search(r"GL(\d+)", last_id)
+			new_num = int(match.group(1)) + 1 if match else 1
+		else:
+			new_num = 1
+		# Safe padding
+		if new_num <= 9999:
+			new_id = f"{prefix}{new_num:04d}"
+		else:
+			new_id = f"{prefix}{new_num}"
+		self.loan_id = new_id
 
 
 def update_total_amount_paid(doc):
