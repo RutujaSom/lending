@@ -113,6 +113,7 @@ def get_todays_emis(
             lrs.loan,
             l.applicant_type,
             l.applicant,
+            l.loan_id,
             lm.member_name,
             lm.group,
             lm.mobile_no,
