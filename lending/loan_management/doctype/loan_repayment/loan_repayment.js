@@ -71,7 +71,6 @@ frappe.ui.form.on('Loan Repayment', {
 			callback: function(r) {
 				let amounts = r.message;
 				frm.set_df_property('amount_paid', 'read_only', frm.doc.payment_type == "Loan Closure" ? 1:0);
-
 				frm.set_value('pending_principal_amount', amounts['pending_principal_amount']);
 				if (frm.doc.is_term_loan || frm.doc.payment_type == "Loan Closure") {
 					frm.set_value('payable_principal_amount', amounts['payable_principal_amount']);
