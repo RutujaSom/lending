@@ -137,7 +137,7 @@ def get_todays_emis(
         LEFT JOIN `tabLoan Repayment` lr 
             ON lr.against_loan = lrs.loan 
             AND DATE(lr.value_date) = rs.payment_date 
-            AND lr.docstatus = 1
+            AND lr.workflow_state IN ('Approved', 'Pending', 'Open')
         {conditions}
         GROUP BY rs.name
         HAVING COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment
