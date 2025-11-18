@@ -243,6 +243,12 @@ frappe.ui.form.on("Loan Application", {
                 };
             }
         });
+    },
+	description(frm) {
+        // alert("frm.doc.description ....",frm.doc.description)
+        if (frm.doc.description) {
+            frm.set_value("description", frm.doc.description.toUpperCase());
+        }
     }
 });
 

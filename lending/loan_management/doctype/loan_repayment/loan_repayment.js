@@ -107,7 +107,15 @@ frappe.ui.form.on("Loan Repayment", {
         frm.add_custom_button('Import Loan Repayment', () => {
             open_import_dialog(frm);
         });
-	},
+	
+        frm.set_query("mode_of_payment", function() {
+            return {
+                filters: {
+                    name: ["in", ["Cash", "ONLINE"]]
+                }
+            };
+        });
+    },
 });
 
 
