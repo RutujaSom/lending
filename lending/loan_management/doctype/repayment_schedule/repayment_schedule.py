@@ -72,8 +72,8 @@ def get_todays_emis(
 
     # Add dynamic search (searching applicant name or loan number)
     if search_text:
-        conditions += " AND (lm.member_name LIKE %s OR lrs.loan LIKE %s)"
-        params.extend([f"%{search_text}%", f"%{search_text}%"])
+        conditions += " AND (lm.member_name LIKE %s OR lm.member_id LIKE %s OR lrs.loan LIKE %s)"
+        params.extend([f"%{search_text}%", f"%{search_text}%",f"%{search_text}%"])
 
     user = frappe.session.user
     roles = frappe.get_roles(user)
