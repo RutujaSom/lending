@@ -360,7 +360,7 @@
   "doctype": "Workflow",
   "document_type": "Loan Repayment",
   "is_active": 1,
-  "modified": "2025-10-28 11:37:21.008162",
+  "modified": "2025-11-14 15:39:13.168053",
   "name": "Loan Repayment Verification",
   "override_status": 0,
   "send_email_alert": 0,

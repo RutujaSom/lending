@@ -1196,6 +1196,7 @@ def loan_disbursement_list(page=1, page_size=10, search=None, sort_by="name", so
         extra_params=extra_params,
 		link_fields={"applicant": "member_name","against_loan": "loan_id"},
 		link_images_fields={"applicant": "member_image"},
+		dynamic_search_fields = {"applicant":{"doctype": "Loan Member", "field": "member_id"},}
     )
 
     return parent_data

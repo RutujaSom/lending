@@ -736,8 +736,9 @@ def loan_application_list(page=1, page_size=10, search=None, sort_by="name", sor
         is_pagination=is_pagination,
         base_url=base_url,
         extra_params=extra_params,
-        link_fields={"nominee": "member_name","co_borrower": "member_name",},  # 👈 you can also expand Loan Member fields if needed
-        link_images_fields={"applicant": "member_image"}  # 👈 you can also expand Loan Member fields if needed
+        link_fields={"nominee": "member_name","co_borrower": "member_name","applicant": "member_id"},  # 👈 you can also expand Loan Member fields if needed
+        link_images_fields={"applicant": "member_image"},  # 👈 you can also expand Loan Member fields if needed
+        dynamic_search_fields = {"applicant":{"doctype": "Loan Member", "field": "member_id"},}
     )
 
 
