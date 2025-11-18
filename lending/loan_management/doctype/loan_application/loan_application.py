@@ -51,7 +51,7 @@ class LoanApplication(Document):
         loan_product: DF.Link
         maximum_loan_amount: DF.Currency
         nominee: DF.Link
-        nominee_relation: DF.Literal["Spouse", "Mother", "Father", "Son", "Daughter", "Sister", "Brother", "Husband", "Wife", "Friend", "Other"]
+        nominee_relation: DF.Literal["", "SPOUSE", "MOTHER", "FATHER", "SON", "DAUGHTER", "SISTER", "BROTHER", "HUSBAND", "WIFE", "FRIEND", "OTHER"]
         posting_date: DF.Date | None
         proposed_pledges: DF.Table[ProposedPledge]
         rate_of_interest: DF.Percent
@@ -732,7 +732,7 @@ def loan_application_list(page=1, page_size=10, search=None, sort_by="name", sor
         sort_order=sort_order,
         page=int(page),
         page_size=int(page_size),
-        search_fields=["applicant_name"],
+        search_fields=["applicant_name","applicant","name"],
         is_pagination=is_pagination,
         base_url=base_url,
         extra_params=extra_params,

@@ -238,12 +238,11 @@
    "reqd": 1
   },
   {
-   "default": "Spouse",
    "depends_on": "applicant",
    "fieldname": "nominee_relation",
    "fieldtype": "Select",
    "label": "Nominee Relation",
-   "options": "Spouse\nMother\nFather\nSon\nDaughter\nSister\nBrother\nHusband\nWife\nFriend\nOther"
+   "options": "\nSPOUSE\nMOTHER\nFATHER\nSON\nDAUGHTER\nSISTER\nBROTHER\nHUSBAND\nWIFE\nFRIEND\nOTHER"
   },
   {
    "fieldname": "column_break_rmfq",
@@ -259,7 +258,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-29 15:25:58.742032",
+ "modified": "2025-11-18 15:23:56.526647",
  "modified_by": "Administrator",
  "module": "Loan Management",
  "name": "Loan Application",
