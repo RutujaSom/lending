@@ -3428,6 +3428,7 @@ update_fields = [
 	"manual_remarks",
 	"payment_account",
 	"workflow_state",
+	"payment_proof",
 ]
 
 """
@@ -3514,6 +3515,7 @@ def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_
         is_pagination=is_pagination,
         base_url=base_url,
         extra_params=extra_params,
+		image_fields=["payment_proof"],
         link_fields={"applicant": "member_name","against_loan": "loan_id"},
 		link_images_fields={"applicant": "member_image"} ,
 		dynamic_search_fields = {"applicant":{"doctype": "Loan Member", "field": "member_id"},}
@@ -3596,6 +3598,7 @@ def create_loan_repayment():
 
 
 from frappe.model.workflow import apply_workflow
+from urllib.parse import urljoin
 
 @frappe.whitelist()
 def loan_repayment_get(name):
@@ -3625,5 +3628,6 @@ def loan_repayment_get(name):
         
         repayment["applicant_image"] = f"{host_url}{member_doc['member_image']}" if member_doc.get("member_image") else ""
 
-
+    if repayment.get("payment_proof"):
+       repayment["payment_proof"] = urljoin(host_url, repayment["payment_proof"])
     return repayment
