@@ -354,6 +354,7 @@ def get_proposed_pledge(securities):
 
 def get_permission_query_conditions(user):
     print('user .....',user)
+    doctype = frappe.form_dict.get("doctype")
     if not user or user == "Administrator":
         return None
 
@@ -391,8 +392,9 @@ def get_permission_query_conditions(user):
                 )
             """
         else:
+            
             return f"""
-                applicant IN (
+                `tab{doctype}`.`applicant`  IN (
                     SELECT name FROM `tabLoan Member`
                     WHERE `group` in ('{groups_str}')
                 )
