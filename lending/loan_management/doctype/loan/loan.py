@@ -1974,7 +1974,7 @@ update_fields = [
 """
 	Get Loan Application List (with optional pagination, search & sorting)
 """
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def loan_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False, loan_group=None, **kwargs):
     is_pagination = frappe.utils.sbool(is_pagination)  # convert "true"/"false"/1/0 into bool
     extra_params = {"search": search} if search else {}
@@ -2040,7 +2040,7 @@ def loan_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc
                 "results": []
             }
     base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
-
+    print(".......",filters)
     return get_paginated_data(
         doctype="Loan",
         fields=update_fields,

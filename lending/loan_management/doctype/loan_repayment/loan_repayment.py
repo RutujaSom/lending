@@ -3434,7 +3434,7 @@ update_fields = [
 """
 	Get Loan Repayment List (with optional pagination, search & sorting)
 """
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc", is_pagination=False, loan_group=None, **kwargs):
     is_pagination = frappe.utils.sbool(is_pagination)
     extra_params = {"search": search} if search else {}
@@ -3501,7 +3501,7 @@ def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_
 
     # 🔹 For non-Agents → no restriction
     base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
-
+    print("in pay .....",filters)
     return get_paginated_data(
         doctype="Loan Repayment",
         fields=update_fields,
