@@ -33,7 +33,7 @@ class RepaymentSchedule(Document):
 import frappe
 from frappe.utils import today, nowdate
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def get_todays_emis(
     selected_date=None, 
     search_text=None, 
@@ -43,6 +43,7 @@ def get_todays_emis(
     loan_group=None,
     is_pagination=False,
     upto_date=None,
+    applicant=None,
 ):
     if not upto_date:
         upto_date = today()
@@ -69,6 +70,10 @@ def get_todays_emis(
     if loan_group:
         conditions += " AND lm.group LIKE %s"
         params.extend([f"%{loan_group}%"])
+
+    if applicant:
+        conditions += " AND l.applicant = %s"
+        params.extend([f"{applicant}"])
 
     # Add dynamic search (searching applicant name or loan number)
     if search_text:
