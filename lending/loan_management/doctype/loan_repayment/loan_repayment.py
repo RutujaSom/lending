@@ -3501,7 +3501,7 @@ def loan_repayment_list(page=1, page_size=10, search=None, sort_by="name", sort_
 
     # 🔹 For non-Agents → no restriction
     base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
-    print("in pay .....",filters)
+
     return get_paginated_data(
         doctype="Loan Repayment",
         fields=update_fields,

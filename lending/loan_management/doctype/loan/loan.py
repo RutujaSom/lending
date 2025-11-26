@@ -2040,7 +2040,7 @@ def loan_list(page=1, page_size=10, search=None, sort_by="name", sort_order="asc
                 "results": []
             }
     base_url = frappe.request.host_url.rstrip("/") + frappe.request.path
-    print(".......",filters)
+
     return get_paginated_data(
         doctype="Loan",
         fields=update_fields,
