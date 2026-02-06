@@ -44,7 +44,9 @@ def get_todays_emis(
     is_pagination=False,
     upto_date=None,
     applicant=None,
+    is_schedular=False
 ):
+    print("Selected Date:", selected_date, type(selected_date))
     if not upto_date:
         upto_date = today()
 
@@ -81,22 +83,11 @@ def get_todays_emis(
         params.extend([f"%{search_text}%", f"%{search_text}%",f"%{search_text}%"])
 
     user = frappe.session.user
-    roles = frappe.get_roles(user)
-    # Case 1: Logged in as Employee
-    if not any(role in roles for role in ["Administrator", "System Manager"]):
-        employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
-        if employee:
-            assigned_groups = _get_active_groups(employee)
-            if assigned_groups:
-                conditions += " AND lm.group IN %s"
-                params.append(tuple(assigned_groups))
-            else:
-                return []
-
-    # Case 2: Logged in as Admin → optional filter by employee
-    else:
-        if employee:
-            employee = frappe.db.get_value("Employee", {"name": employee}, "name")
+    roles = frappe.get_roles(user) 
+    if not is_schedular:
+        # Case 1: Logged in as Employee
+        if not any(role in roles for role in ["Administrator", "System Manager"]):
+            employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
             if employee:
                 assigned_groups = _get_active_groups(employee)
                 if assigned_groups:
@@ -104,6 +95,18 @@ def get_todays_emis(
                     params.append(tuple(assigned_groups))
                 else:
                     return []
+
+        # Case 2: Logged in as Admin → optional filter by employee
+        else:
+            if employee:
+                employee = frappe.db.get_value("Employee", {"name": employee}, "name")
+                if employee:
+                    assigned_groups = _get_active_groups(employee)
+                    if assigned_groups:
+                        conditions += " AND lm.group IN %s"
+                        params.append(tuple(assigned_groups))
+                    else:
+                        return []
                 
     host_url = frappe.request.host_url.rstrip("/")
 
