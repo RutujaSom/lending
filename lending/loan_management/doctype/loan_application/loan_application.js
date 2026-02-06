@@ -156,6 +156,10 @@ frappe.ui.form.on('Loan Application', {
         frm.add_custom_button('Import Loan Application', () => {
 			open_import_dialog(frm);
 		});
+
+		frm.add_custom_button('Download PDF', function() {
+			add_print_button(frm);
+		})
         
     }
 });
@@ -202,6 +206,7 @@ function open_import_dialog() {
 
     d.show();
 }
+
 
 
 
@@ -252,5 +257,38 @@ frappe.ui.form.on("Loan Application", {
     }
 });
 
+
+
+
+// Function moved outside to avoid scoping issues
+function add_print_button(frm) {
+    let d = new frappe.ui.Dialog({
+        title: 'Select Report Format',
+        fields: [
+            {
+                label: 'Report Format',
+                fieldname: 'format',
+                fieldtype: 'Select',
+                options: [
+                    { label: 'Demand Promissory Note', value: 'demand promissory note' },
+                    { label: 'DP Note Waiver Letter', value: 'dp note cum waiver letter' },
+                    { label: 'Sanction Letter', value: 'Sanction Letter' },
+                    { label: 'Policy Apply Letter', value: 'Policy Apply Letter' },
+                    { label: 'Individual Declaration', value: 'Individual Decleration and Terms and Conditions version jan 24' },
+                    { label: 'Group Declaration', value: 'Group Declaration And Terms And Consition VERSION JAN 24' },
+                    { label: 'Group Loan Agreement', value: 'GROUP LOAN AGREEMENT version jan 24' },
+                	{ label: 'Fact Sheet', value: 'Fact Sheet' }
+                ]
+            }
+        ],
+        primary_action: function(values) {
+            const url = `/api/method/frappe.utils.print_format.download_pdf?doctype=Loan Application&name=${frm.doc.name}&format=${values.format}`;
+            window.open(url, '_blank');
+            d.hide();
+        },
+        primary_action_label: 'Download'
+    });
+    d.show();
+}
 
 

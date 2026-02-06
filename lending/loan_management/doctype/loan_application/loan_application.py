@@ -44,6 +44,7 @@ class LoanApplication(Document):
         co_borrower: DF.Link | None
         company: DF.Link
         description: DF.SmallText | None
+        group: DF.Link | None
         is_secured_loan: DF.Check
         is_term_loan: DF.Check
         loan_amount: DF.Currency
@@ -353,7 +354,7 @@ def get_proposed_pledge(securities):
 
 
 def get_permission_query_conditions(user):
-    print('user .....',user)
+
     doctype = frappe.form_dict.get("doctype")
     if not user or user == "Administrator":
         return None
@@ -497,7 +498,8 @@ def bulk_import_loan_applications(file_url):
                 "doctype": "Loan Application",
                 "applicant_type": "Loan Member",
                 "applicant": applicant,
-                "company": "Excellminds (Demo)",
+                # "company": "Excellminds (Demo)",
+                "company": "Tejraj (Demo)",
                 "loan_product": loan_product,
                 "loan_amount": row.get("LOAN AMOUNT"),
                 "is_secured_loan": 0,
