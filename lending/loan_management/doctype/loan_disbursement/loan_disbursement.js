@@ -144,6 +144,7 @@ frappe.ui.form.on("Loan Disbursement", {
                         let loan = r.message;
                         let loan_amount = loan.loan_amount || 0;
                         let total_charges = 0;
+                        alert('....'+loan.custom_insurance_amount)
 
                         // Get Company setting for charge deduction
                         frappe.call({
@@ -173,13 +174,23 @@ frappe.ui.form.on("Loan Disbursement", {
                                                             total_charges += c.amount;
                                                         }
                                                     });
+                                                    alert('total_charges ..'+total_charges)
 
                                                     // Net amount after deducting charges
                                                     let net_amount = loan_amount - total_charges;
+                                                    alert("net_amount ..."+net_amount)
+                                                    if (loan.custom_insurance_amount){
+                                                        net_amount = net_amount - loan.custom_insurance_amount
+                                                    }
                                                     frm.set_value("disbursed_amount", net_amount);
                                                 }
                                             }
                                         });
+                                    }else{
+                                        if (loan.custom_insurance_amount){
+                                            net_amount = loan_amount - loan.custom_insurance_amount
+                                        }
+                                        frm.set_value("disbursed_amount", net_amount);
                                     }
                                 } else {
                                     // If no deduction → Disburse full loan amount
