@@ -176,10 +176,18 @@ frappe.ui.form.on("Loan Disbursement", {
 
                                                     // Net amount after deducting charges
                                                     let net_amount = loan_amount - total_charges;
+                                                    if (loan.custom_insurance_amount){
+                                                        net_amount = net_amount - loan.custom_insurance_amount
+                                                    }
                                                     frm.set_value("disbursed_amount", net_amount);
                                                 }
                                             }
                                         });
+                                    }else{
+                                        if (loan.custom_insurance_amount){
+                                            net_amount = loan_amount - loan.custom_insurance_amount
+                                        }
+                                        frm.set_value("disbursed_amount", net_amount);
                                     }
                                 } else {
                                     // If no deduction → Disburse full loan amount
