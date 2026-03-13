@@ -277,7 +277,8 @@ function add_print_button(frm) {
                     { label: 'Individual Declaration', value: 'Individual Decleration and Terms and Conditions version jan 24' },
                     { label: 'Group Declaration', value: 'Group Declaration And Terms And Consition VERSION JAN 24' },
                     { label: 'Group Loan Agreement', value: 'GROUP LOAN AGREEMENT version jan 24' },
-                	{ label: 'Fact Sheet', value: 'Fact Sheet' }
+                	{ label: 'Fact Sheet', value: 'Fact Sheet' },
+					{ label: 'Individual Loan Agreement', value: 'Individual Loan Agremeent' }
                 ]
             }
         ],
