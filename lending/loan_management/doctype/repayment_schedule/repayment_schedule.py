@@ -86,7 +86,7 @@ def get_todays_emis(
     roles = frappe.get_roles(user) 
     if not is_schedular:
         # Case 1: Logged in as Employee
-        if not any(role in roles for role in ["Administrator", "System Manager"]):
+        if not any(role in roles for role in ["Administrator", "System Manager", "Accounts Manager","Loan Manager"]):
             employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
             if employee:
                 assigned_groups = _get_active_groups(employee)
@@ -147,6 +147,13 @@ def get_todays_emis(
             AND DATE(lr.value_date) = rs.payment_date 
             AND lr.workflow_state IN ('Approved', 'Pending', 'Open')
         {conditions}
+        AND l.status IN (
+            'Sanctioned',
+            'Partially Disbursed',
+            'Disbursed',
+            'Active',
+            'Loan Closure Requested'
+        )
         GROUP BY rs.name
         HAVING COALESCE(SUM(lr.amount_paid), 0) < rs.total_payment
         ORDER BY {sort_by} {sort_order}
