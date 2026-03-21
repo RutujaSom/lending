@@ -46,7 +46,7 @@ def get_todays_emis(
     applicant=None,
     is_schedular=False
 ):
-    print("Selected Date:", selected_date, type(selected_date))
+    print("Selected Date:", selected_date, type(selected_date),'  .. is_schedular ... ',is_schedular)
     if not upto_date:
         upto_date = today()
 
@@ -107,8 +107,10 @@ def get_todays_emis(
                         params.append(tuple(assigned_groups))
                     else:
                         return []
-                
-    host_url = frappe.request.host_url.rstrip("/")
+    
+    host_url = ""
+    if not is_schedular:          
+        host_url = frappe.request.host_url.rstrip("/")
 
     query = f"""
         SELECT 
