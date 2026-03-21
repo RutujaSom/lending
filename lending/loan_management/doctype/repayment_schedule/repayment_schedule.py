@@ -61,11 +61,11 @@ def get_todays_emis(
     sort_order = "ASC" if sort_order.upper() == "ASC" else "DESC"
 
     if selected_date:
-        conditions = "WHERE rs.payment_date = %s and rs.balance_loan_amount > 0"
+        conditions = "WHERE rs.payment_date = %s and rs.balance_loan_amount >= 0"
         params = [selected_date]
 
     else:
-        conditions = "WHERE rs.payment_date <= %s and rs.balance_loan_amount > 0"
+        conditions = "WHERE rs.payment_date <= %s and rs.balance_loan_amount >= 0"
         params = [upto_date]
 
 
