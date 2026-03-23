@@ -51,7 +51,7 @@ class LoanApplication(Document):
         loan_group: DF.Data | None
         loan_product: DF.Link
         maximum_loan_amount: DF.Currency
-        nominee: DF.Link
+        nominee: DF.Link | None
         nominee_relation: DF.Literal["", "SPOUSE", "MOTHER", "FATHER", "SON", "DAUGHTER", "SISTER", "BROTHER", "HUSBAND", "WIFE", "FRIEND", "OTHER"]
         posting_date: DF.Date | None
         proposed_pledges: DF.Table[ProposedPledge]
@@ -441,97 +441,127 @@ def has_permission(doc, user):
 
 
 
+
 @frappe.whitelist()
 def bulk_import_loan_applications(file_url):
-    print("in import appl")
-    # Get File doc
     file_doc = frappe.get_doc("File", {"file_url": file_url})
-    file_path = file_doc.get_full_path()   # full path to file in sites/private/files/ or sites/{sitename}/public/files/
+    file_path = file_doc.get_full_path()
 
-    # Read file with pandas
     if file_url.endswith(".csv"):
         df = pd.read_csv(file_path)
     else:
-        df = pd.read_excel(file_path)
-        df = df.fillna("")
+        df = pd.read_excel(file_path).fillna("")
 
-    print('file_path ...', file_path, 'df ....', df)
+    success, errors = [], []
 
-    success = []
-    errors = []
-
+    last_loan_application = None  # ⭐ store borrower loan application
     for idx, row in df.iterrows():
         try:
-            nominee_name = row.get("NOMINEE FULL NAME")
-            relation = str(row.get("RELATIONSHIP OF NOMINEE WITH BORROWER")).title()
-            print("relation ....",relation)
-            print('row.get("ROI")...',row.get("ROI"), type(row.get("ROI")))
-            # --- Get Loan Product ---
-            loan_product = frappe.get_value("Loan Product", {"rate_of_interest": row.get("ROI")}, "name")
-            if not loan_product:
-                raise Exception(f"Loan Product '{row.get('ROI')}' not found")
+            type_of_borrower = row.get("TYPE OF BORROWER")
+            loan_id = row.get("LOAN ID")
+            print("loan id ....",loan_id,' .... amount... ', row.get("LOAN AMOUNT"))
 
-            # --- Get Applicant ---
-            print('row.get("MEMBER NO") ...',row.get("MEMBER NO"))
-            applicant = frappe.get_value("Loan Member", {"member_id": row.get("MEMBER NO")}, "name")
-            if not applicant:
-                raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
-            
-            nominee_details = frappe.get_value("Loan Member", {"member_name": nominee_name}, "name")
-            if not nominee_details:
-                raise Exception(f"Applicant '{nominee_name}' not found")
+            # ----------------------------------------
+            # BORROWER → CREATE LOAN APPLICATION
+            # ----------------------------------------
+            if type_of_borrower != "CO-BORROWER":
 
-            # --- Parse Date ---
-            loan_date = row.get("LOAN SANCTION DATE/ trasancation date")
-            if isinstance(loan_date, str):
-                for fmt in ("%d-%m-%Y", "%d/%m/%Y"):
-                    try:
-                        loan_date = datetime.strptime(loan_date, fmt).date()
-                        break
-                    except:
-                        continue
+                loan_product = frappe.get_value(
+                    "Loan Product",
+                    {"rate_of_interest": row.get("ROI")},
+                    "name"
+                )
+                if not loan_product:
+                    raise Exception(f"Loan Product '{row.get('ROI')}' not found")
 
-            print('loan_product ....',loan_product)
+                applicant = frappe.get_value(
+                    "Loan Member",
+                    {"member_id": row.get("MEMBER NO")},
+                    "name"
+                )
+                if not applicant:
+                    raise Exception(f"Applicant '{row.get('MEMBER NO')}' not found")
 
-            # Prepare data
-            loan_data = {
-                "doctype": "Loan Application",
-                "applicant_type": "Loan Member",
-                "applicant": applicant,
-                # "company": "Excellminds (Demo)",
-                "company": "Tejraj (Demo)",
-                "loan_product": loan_product,
-                "loan_amount": row.get("LOAN AMOUNT"),
-                "is_secured_loan": 0,
-                "is_term_loan": 1,
-                "repayment_method": "Repay Over Number of Periods",
-                "repayment_periods": row.get("TERM IN MONTHS"),
-                "repayment_amount": row.get("EMI"),
-                "rate_of_interest": row.get("ROI"),
-                "posting_date": loan_date,
-				"status":"Approved",
-                # "workflow_state": "Approved", 
-                "nominee":nominee_details,
-                "nominee_relation":relation
-            }
+                nominee_name = row.get("NOMINEE FULL NAME")
+                nominee = frappe.get_value(
+                    "Loan Member",
+                    {"member_name": nominee_name},
+                    "name"
+                )
 
-            loan_doc = frappe.get_doc(loan_data)
-            loan_doc.insert()
-            loan_doc.db_set("workflow_state", "Approved", update_modified=False)
-            loan_doc.submit()
+                relation = str(row.get("RELATIONSHIP OF NOMINEE WITH BORROWER")).upper()
 
-            success.append(loan_doc.name)
+                loan_date = row.get("LOAN SANCTION DATE/ trasancation date")
+                if isinstance(loan_date, str):
+                    for fmt in ("%d-%m-%Y", "%d/%m/%Y"):
+                        try:
+                            loan_date = datetime.strptime(loan_date, fmt).date()
+                            break
+                        except:
+                            pass
+                print("loan_date ....",loan_date)
+                loan_doc = frappe.get_doc({
+                    "doctype": "Loan Application",
+                    "applicant_type": "Loan Member",
+                    "applicant": applicant,
+                    "company": "Tejraj Micro Association",
+                    "loan_product": loan_product,
+                    "loan_amount": row.get("LOAN AMOUNT"),
+                    "repayment_method": "Repay Over Number of Periods",
+                    "repayment_periods": row.get("TERM IN MONTHS"),
+                    "repayment_amount": row.get("EMI"),
+                    "rate_of_interest": row.get("ROI"),
+                    "posting_date": loan_date,
+                    "status": "Approved",
+                    "nominee": nominee,
+                    "nominee_relation": relation,
+                    "custom_loan_id": loan_id
+                })
+
+                loan_doc.insert()
+                print("loan_doc ....",loan_doc)
+                # loan_doc.db_set("workflow_state", "Approved", update_modified=False)
+
+                last_loan_application = loan_doc.name  # ⭐ SAVE IT
+                success.append(loan_doc.name)
+
+            # ----------------------------------------
+            # CO-BORROWER → ATTACH TO PREVIOUS LOAN
+            # ----------------------------------------
+            else:
+                if not last_loan_application:
+                    raise Exception("Co-Borrower found without Borrower")
+
+                coborrower = frappe.get_value(
+                    "Loan Member",
+                    {"member_id": row.get("MEMBER NO")},
+                    "name"
+                )
+                print("Co Borrower name:", coborrower)
+                if not coborrower:
+                    raise Exception(f"Co-Borrower '{row.get('MEMBER NO')}' not found")
+
+                loan_doc = frappe.get_doc("Loan Application", last_loan_application)
+
+                loan_doc.co_borrower = coborrower
+
+                loan_doc.save(ignore_permissions=True)
+                print("loan_doc.co_borrower .....",loan_doc.co_borrower)
+
+                # loan_doc.db_set("workflow_state", "Approved", update_modified=False)
 
         except Exception as e:
-            print('e .....',e)
-            frappe.log_error(f"Bulk Loan Import Error (Row {idx+1}): {str(e)}")
+            print("e .....",e)
+            frappe.log_error(
+                f"Bulk Loan Import Error (Row {idx+1}): {str(e)}"
+            )
             errors.append(f"Row {idx+1}: {str(e)}")
 
-    return f"success_count: {len(success)}, error_count: {len(errors)}"
-
-
-
-
+    return {
+        "success_count": len(success),
+        "error_count": len(errors),
+        "errors": errors
+    }
 
 
 
@@ -824,3 +854,92 @@ def loan_application_get(name):
     application = applications[0]
 
     return application
+
+
+
+
+
+
+
+@frappe.whitelist()
+def update_import_loan_application(file_url):
+    from openpyxl import load_workbook
+
+    frappe.flags.in_import = True
+
+    # -----------------------------
+    # Read Excel File
+    # -----------------------------
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+
+    rows = []
+    with open(file_path, "rb") as f:
+        wb = load_workbook(f, data_only=True)
+        ws = wb.active
+        headers = [cell.value for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            rows.append(dict(zip(headers, row)))
+
+    updated = []
+    skipped = []
+
+    # -----------------------------
+    # Process Rows
+    # -----------------------------
+    for row in rows:
+        loan_id = str(row.get("LOAN ID")).strip() if row.get("LOAN ID") else None
+        loan_group_code = str(row.get("GROUP CODE")).strip() if row.get("GROUP CODE") else None
+
+        if not loan_id or not loan_group_code:
+            skipped.append({"loan_id": loan_id, "reason": "Missing Loan ID or Group Code"})
+            continue
+
+        # -----------------------------
+        # 1️⃣ Check Loan exists
+        # -----------------------------
+        loan_name = frappe.db.get_value("Loan", {"loan_id": loan_id}, "name")
+        if not loan_name:
+            skipped.append({"loan_id": loan_id, "reason": "Loan not found"})
+            continue
+
+        # -----------------------------
+        # 2️⃣ Check Loan Group exists
+        # -----------------------------
+        group_doc = frappe.db.get_value(
+            "Loan Group",
+            {"name": loan_group_code},
+            ["name", "group_name"],
+            as_dict=True
+        )
+
+        if not group_doc:
+            skipped.append({"loan_id": loan_id, "reason": "Loan Group not found"})
+            continue
+
+        # -----------------------------
+        # 3️⃣ Update Loan Application
+        # -----------------------------
+        frappe.db.sql(
+            """
+            UPDATE `tabLoan Application`
+            SET
+                `group` = %(group_code)s,
+                loan_group = %(group_name)s
+            WHERE custom_loan_id = %(loan_id)s
+            """,
+            {
+                "group_code": group_doc.name,
+                "group_name": group_doc.group_name,
+                "loan_id": loan_id
+            }
+        )
+
+        updated.append(loan_id)
+
+    frappe.db.commit()
+
+    return f"updated_count: {len(updated)}, skipped_count: {len(skipped)}"
+
+
+
