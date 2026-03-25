@@ -3419,6 +3419,7 @@ def update_loan_repayment_dates(file_url):
 				if not loan:
 					errors.append(f"Row {row_idx + 1}: Loan {loan_id} not found")
 					continue
+				print('loan ....',loan)
 
 				payments = []
 
@@ -3462,6 +3463,7 @@ def update_loan_repayment_dates(file_url):
 
 						if not repayment:
 							continue
+						print('repayment ....',repayment)
 
 						doc = frappe.get_doc("Loan Repayment", repayment)
 						new_date = getdate(posting_date)
@@ -3489,12 +3491,7 @@ def update_loan_repayment_dates(file_url):
 				errors.append(f"Row {row_idx + 1}: {str(row_error)}")
 				frappe.db.rollback()
 
-		return {
-			"updated_count": len(updated),
-			"error_count": len(errors),
-			"updated_repayments": updated,
-			"errors": errors
-		}
+		return f"updated_count:{len(updated)}, error_count: {len(errors)}"
 
 	except Exception as e:
 		frappe.log_error(frappe.get_traceback(), "Update Loan Repayment Dates Error")
