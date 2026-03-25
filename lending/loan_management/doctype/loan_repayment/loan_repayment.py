@@ -3455,6 +3455,10 @@ def update_loan_repayment_dates(file_url):
 						if pay["ref_no"]:
 							filters["reference_number"] = str(pay["ref_no"]).strip()
 
+						received_date = row.get("RECEIVED DATE")
+						if received_date and str(received_date).upper() not in ["NIL", "NONE", "NULL","NAN"]:
+							filters["reference_date"] = getdate(received_date)
+						
 						repayment = frappe.db.get_value(
 							"Loan Repayment",
 							filters,
