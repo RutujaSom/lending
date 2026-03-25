@@ -116,6 +116,31 @@ class LoanRepayment(AccountsController):
 				employee = frappe.db.get_value("Loan Group Assignment", {"loan_group": loan_group}, "employee")
 				if employee:
 					self.created_by = employee   # employee is Link field in Loan Repayment
+		
+
+	def after_save(self):
+		print("after save .........")
+		print("self.amount_paid ")
+		if self.amount_paid:
+			print(self.amount_paid ,'....self.amount_paid... ',self.mode_of_payment)
+			if self.mode_of_payment == "Cash":
+				# check if logged-in user has Agent or Employee role
+				
+				roles = frappe.get_roles(frappe.session.user)
+				if ("Agent" in roles or "Employee" in roles) and "Administrator" not in roles:
+					print("in ag ....")
+			
+					# Create new record in Collection In Hand
+					collection = frappe.get_doc({
+						"doctype": "Collection In Hand",
+						"loan_repayment": self.name,     # Link back to repayment
+						"amount": self.amount_paid,      # Current repayment
+						"posting_date": frappe.utils.nowdate(),
+						"employee": self.created_by,
+						"loan": self.against_loan,
+						"applicant":self.applicant,
+					})
+					collection.insert(ignore_permissions=True)
 
 
 	def validate(self):
@@ -195,24 +220,7 @@ class LoanRepayment(AccountsController):
 
 
 		# Ensure amount field exists in Loan Repayment
-		if self.amount_paid:
-			if self.mode_of_payment == "Cash":
-				# check if logged-in user has Agent or Employee role
-				roles = frappe.get_roles(frappe.session.user)
-				if ("Agent" in roles or "Employee" in roles) and "Administrator" not in roles:
-			
-					# Create new record in Collection In Hand
-					collection = frappe.get_doc({
-						"doctype": "Collection In Hand",
-						"loan_repayment": self.name,     # Link back to repayment
-						"amount": self.amount_paid,      # Current repayment
-						"posting_date": frappe.utils.nowdate(),
-						"employee": self.created_by,
-						"loan": self.against_loan,
-						"applicant":self.applicant,
-					})
-					collection.insert(ignore_permissions=True)
-
+		
 		if self.is_backdated:
 			if frappe.flags.in_test:
 				self.create_repost()
@@ -2494,6 +2502,7 @@ def get_pending_principal_amount(loan, loan_disbursement=None):
 		loan.status in ("Disbursed", "Closed", "Active", "Written Off", "Settled")
 		and loan.repayment_schedule_type != "Line of Credit"
 	):
+		print("loan.total_principal_paid ...",loan.total_principal_paid)
 		pending_principal_amount = flt(
 			flt(loan.total_payment)
 			+ flt(loan.debit_adjustment_amount)
@@ -2510,7 +2519,7 @@ def get_pending_principal_amount(loan, loan_disbursement=None):
 			- flt(loan.total_principal_paid),
 			precision,
 		)
-
+	print("... pending_principal_amount .....",pending_principal_amount)
 	return pending_principal_amount
 
 
@@ -3296,7 +3305,7 @@ def bulk_import_loan_repayments(file_url):
                         # --- 2. Create Interest Accrual ---
                         accrual = frappe.new_doc("Process Loan Interest Accrual")
                         accrual.loan = loan.name
-                        accrual.company = "Excellminds (Demo)"
+                        accrual.company = "Tejraj Micro Association"
                         accrual.posting_date = posting_date
                         print('accrual ...////....',accrual)
                         accrual.insert(ignore_permissions=True)
@@ -3310,7 +3319,7 @@ def bulk_import_loan_repayments(file_url):
                     demand = frappe.new_doc("Process Loan Demand")
                     print('demand .....',demand)
                     demand.loan = loan.name
-                    demand.company = "Excellminds (Demo)"
+                    demand.company = "Tejraj Micro Association"
                     demand.posting_date = posting_date
                     demand.insert(ignore_permissions=True)
                     demand.submit()
@@ -3346,15 +3355,15 @@ def bulk_import_loan_repayments(file_url):
                     # Loop through each payment and create repayment record
                     for pay in payments:
                         try:
-                            print('in paument .....', pay)
+                            print('in paument .....', pay, 'posting_date ', getdate(posting_date),' ..getdate(received_date) ...',getdate(received_date))
                             repayment = frappe.new_doc("Loan Repayment")
                             repayment.against_loan = loan.name
-                            repayment.posting_date = getdate(posting_date)
+                            repayment.value_date = getdate(posting_date)
                             repayment.amount_paid = pay["amount"]
                             repayment.mode_of_payment = pay["mode"]
                             repayment.reference_number = pay["ref_no"]
                             repayment.reference_date = getdate(received_date)
-                            repayment.remarks = row.get("REMARK IF ANY")
+                            repayment.manual_remarks = row.get("REMARK IF ANY")
                             repayment.insert(ignore_permissions=True)
                             repayment.submit()
                             print(repayment,' ....... repaymant')
@@ -3383,13 +3392,140 @@ def bulk_import_loan_repayments(file_url):
         frappe.log_error(frappe.get_traceback(), "Bulk Import Loan Repayments Error")
         # return {"error": str(e)}
         return api_error(e)
+	
+
+	
 
 
+@frappe.whitelist()
+def update_loan_repayment_dates(file_url):
+	try:
+		file_doc = frappe.get_doc("File", {"file_url": file_url})
+		file_path = file_doc.get_full_path()
+		df = pd.read_excel(file_path)
 
+		updated = []
+		errors = []
 
+		for row_idx, row in df.iterrows():
+			try:
+				loan_id = row.get("LOAN ID")
+				posting_date = row.get("EMI DATE")
 
+				if not posting_date or str(posting_date).upper() in ["NIL", "NONE", "NULL", "NAN"]:
+					continue
 
+				loan = frappe.get_doc("Loan", {"loan_id": loan_id})
+				if not loan:
+					errors.append(f"Row {row_idx + 1}: Loan {loan_id} not found")
+					continue
 
+				payments = []
+
+				if row.get("CASH") and float(row.get("CASH")) > 0:
+					payments.append({
+						"mode": "Cash",
+						"amount": float(row.get("CASH")),
+						"ref_no": None
+					})
+
+				if row.get("ONLINE") and float(row.get("ONLINE")) > 0:
+					payments.append({
+						"mode": "UPI",
+						"amount": float(row.get("ONLINE")),
+						"ref_no": row.get("UTR NO")
+					})
+
+				if row.get("ONLINE_1") and float(row.get("ONLINE_1")) > 0:
+					payments.append({
+						"mode": "UPI",
+						"amount": float(row.get("ONLINE_1")),
+						"ref_no": row.get("UTR NO_1")
+					})
+
+				for pay in payments:
+					try:
+						filters = {
+							"against_loan": loan.name,
+							"amount_paid": pay["amount"],
+							"mode_of_payment": pay["mode"],
+						}
+
+						if pay["ref_no"]:
+							filters["reference_number"] = str(pay["ref_no"]).strip()
+
+						repayment = frappe.db.get_value(
+							"Loan Repayment",
+							filters,
+							"name",
+						)
+
+						if not repayment:
+							continue
+
+						doc = frappe.get_doc("Loan Repayment", repayment)
+						new_date = getdate(posting_date)
+
+						frappe.db.sql("""
+							UPDATE `tabLoan Repayment`
+							SET value_date = %(posting_date)s
+							WHERE name = %(name)s
+						""", {
+							"posting_date": posting_date,
+							"name": doc.name
+						})
+						frappe.db.commit()
+
+						update_accounting_entries(doc.name, new_date)
+						updated.append(doc.name)
+
+					except Exception as pay_error:
+						frappe.log_error(frappe.get_traceback(), f"Payment processing error for row {row_idx + 1}")
+						errors.append(f"Row {row_idx + 1}: Payment error - {str(pay_error)}")
+						frappe.db.rollback()
+
+			except Exception as row_error:
+				frappe.log_error(frappe.get_traceback(), f"Row processing error at index {row_idx + 1}")
+				errors.append(f"Row {row_idx + 1}: {str(row_error)}")
+				frappe.db.rollback()
+
+		return {
+			"updated_count": len(updated),
+			"error_count": len(errors),
+			"updated_repayments": updated,
+			"errors": errors
+		}
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Update Loan Repayment Dates Error")
+		return api_error(e)
+
+def update_accounting_entries(voucher_no, posting_date):
+    posting_date = getdate(posting_date)
+
+    # Update GL Entries
+    frappe.db.sql("""
+        UPDATE `tabGL Entry`
+        SET posting_date = %(posting_date)s,
+            transaction_date = %(posting_date)s
+        WHERE voucher_type = 'Loan Repayment'
+          AND voucher_no = %(voucher_no)s
+    """, {
+        "posting_date": posting_date,
+        "voucher_no": voucher_no
+    })
+
+    # Update Payment Ledger Entries
+    frappe.db.sql("""
+        UPDATE `tabPayment Ledger Entry`
+        SET posting_date = %(posting_date)s
+        WHERE voucher_type = 'Loan Repayment'
+          AND voucher_no = %(voucher_no)s
+    """, {
+        "posting_date": posting_date,
+        "voucher_no": voucher_no
+    })
+    frappe.db.commit()
 
 
 update_fields = [
