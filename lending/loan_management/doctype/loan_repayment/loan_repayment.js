@@ -140,7 +140,8 @@ function open_import_dialog() {
         primary_action_label: 'Import',
         primary_action(values) {
             frappe.call({
-				method: "lending.loan_management.doctype.loan_repayment.loan_repayment.bulk_import_loan_repayments",
+				// method: "lending.loan_management.doctype.loan_repayment.loan_repayment.bulk_import_loan_repayments",
+				method: "lending.loan_management.doctype.loan_repayment.loan_repayment.update_loan_repayment_dates",
                 args: {
                     file_url: values.file_url,
                     file_type: values.file_type
